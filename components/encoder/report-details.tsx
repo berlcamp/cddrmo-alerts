@@ -1,19 +1,23 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/form-field';
-import { useReportSaver } from '@/hooks/use-report-saver';
+import type { ReportSaveStatus } from '@/hooks/use-report-saver';
 import { formatReportHeading, fromManilaInputValue, toManilaInputValue } from '@/lib/format';
 import type { Report } from '@/lib/types';
+import type { ReportPatch } from '@/lib/validation';
 import { BlurInput } from './blur-input';
 import { SaveText } from './save-text';
 
-export function ReportDetails({ report, onSaved }: { report: Report; onSaved: (report: Report) => void }) {
-  const { save, status } = useReportSaver(report.id, onSaved);
+export function ReportDetails({ report, save, status, onRetry }: { report: Report; save: (patch: ReportPatch) => Promise<void>; status: ReportSaveStatus; onRetry: () => void }) {
   return (
     <section aria-labelledby="details-heading" className="space-y-4 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 id="details-heading" className="text-xl font-bold tabular">{formatReportHeading(report.report_at)}</h1>
-        <SaveText status={status} />
+        <span className="flex items-center gap-2">
+          <SaveText status={status} />
+          {status === 'error' && <Button type="button" variant="outline" className="h-11 cursor-pointer" onClick={onRetry}>Retry</Button>}
+        </span>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <FormField label="Netcall date and time" htmlFor="report_at">

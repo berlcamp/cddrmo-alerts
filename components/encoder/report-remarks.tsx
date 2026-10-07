@@ -1,7 +1,7 @@
 'use client';
 
 import { FormField } from '@/components/form-field';
-import { useReportSaver } from '@/hooks/use-report-saver';
+import type { ReportSaveStatus } from '@/hooks/use-report-saver';
 import type { Report, ReportSummary } from '@/lib/types';
 import type { ReportPatch } from '@/lib/validation';
 import { BlurInput, BlurTextarea } from './blur-input';
@@ -9,8 +9,7 @@ import { SaveText } from './save-text';
 
 type OverrideField = 'weather_summary_override' | 'wind_summary_override' | 'rivers_summary_override' | 'roads_summary_override' | 'coastal_summary_override';
 
-export function ReportRemarks({ report, computed, onSaved }: { report: Report; computed: ReportSummary; onSaved: (report: Report) => void }) {
-  const { save, status } = useReportSaver(report.id, onSaved);
+export function ReportRemarks({ report, computed, save, status }: { report: Report; computed: ReportSummary; save: (patch: ReportPatch) => Promise<void>; status: ReportSaveStatus }) {
   const overrides: [OverrideField, string, string][] = [
     ['weather_summary_override', 'Average weather', computed.weather],
     ['wind_summary_override', 'Average wind', computed.wind],

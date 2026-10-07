@@ -70,8 +70,8 @@ export function EntryEditor({ entry, weatherOptions, windOptions, saveState, onP
       {saveState?.state === 'failed' && (
         <div role="alert" className="flex flex-wrap items-center gap-2 rounded-md bg-danger-soft px-3 py-2 text-danger">
           <span className="font-bold">Not saved:</span> {saveState.message}
-          <Button type="button" size="sm" variant="outline" className="cursor-pointer" onClick={() => onRetry(entry.id)}>Retry now</Button>
-          <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={() => onDiscard(entry.id)}>Discard change</Button>
+          <Button type="button" variant="outline" className="h-11 cursor-pointer" onClick={() => onRetry(entry.id)}>Retry now</Button>
+          <Button type="button" variant="ghost" className="h-11 cursor-pointer" onClick={() => onDiscard(entry.id)}>Discard change</Button>
         </div>
       )}
       <div className="flex justify-end">

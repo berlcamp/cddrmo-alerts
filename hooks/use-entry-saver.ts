@@ -21,6 +21,7 @@ export function useEntrySaver(save: SaveFn, onSaved: (entry: ReportEntry) => voi
   const inFlight = useRef(new Set<string>());
   const attempts = useRef(new Map<string, number>());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const unmounted = useRef(false);
 
   const flush = useCallback(
     async function run(id: string): Promise<void> {
@@ -40,6 +41,7 @@ export function useEntrySaver(save: SaveFn, onSaved: (entry: ReportEntry) => voi
         result = { ok: false, message: 'No connection. Retrying…', retryable: true };
       }
       inFlight.current.delete(id);
+      if (unmounted.current) return;
 
       if (result.ok) {
         attempts.current.delete(id);
@@ -93,7 +95,11 @@ export function useEntrySaver(save: SaveFn, onSaved: (entry: ReportEntry) => voi
 
   useEffect(() => {
     const pendingTimers = timers.current;
-    return () => pendingTimers.forEach(clearTimeout);
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+      pendingTimers.forEach(clearTimeout);
+    };
   }, []);
 
   return { pending, states, update, retry, discard, hasUnsaved: Object.keys(pending).length > 0 };

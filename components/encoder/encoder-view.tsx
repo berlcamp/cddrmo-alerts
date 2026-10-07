@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { LiveIndicator } from '@/components/report/live-indicator';
 import { useEntrySaver } from '@/hooks/use-entry-saver';
+import { useReportSaver } from '@/hooks/use-report-saver';
 import { useLiveReport } from '@/hooks/use-live-report';
 import { updateEntry } from '@/lib/actions/report-actions';
 import { applyPatch } from '@/lib/encoder-patches';
@@ -35,6 +36,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
 }) {
   const live = useLiveReport(initial);
   const saver = useEntrySaver(updateEntry, live.applyEntry);
+  const reportSaver = useReportSaver(live.report.id, live.applyReport);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const entries = useMemo(() => live.entries.map((e) => applyPatch(e, saver.pending[e.id])), [live.entries, saver.pending]);
@@ -44,12 +46,28 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
   const weatherOptions = useMemo(() => options.filter((o) => o.kind === 'weather' && o.is_active), [options]);
   const windOptions = useMemo(() => options.filter((o) => o.kind === 'wind' && o.is_active), [options]);
 
+  const hasUnsaved = saver.hasUnsaved || reportSaver.hasUnsaved;
   useEffect(() => {
-    if (!saver.hasUnsaved) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    if (!hasUnsaved) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    const guardLinks = (event: MouseEvent) => {
+      const link = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!link || link.target === '_blank' || link.origin !== window.location.origin) return;
+      if (!window.confirm('You have unsaved changes that have not reached the server yet. Leave anyway?')) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [saver.hasUnsaved]);
+    document.addEventListener('click', guardLinks, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', guardLinks, true);
+    };
+  }, [hasUnsaved]);
 
   if (live.deleted) {
     return (
@@ -71,7 +89,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
         <Link href="/admin/reports" className="inline-flex min-h-11 items-center text-sm font-bold text-primary underline-offset-4 hover:underline">← All reports</Link>
         <LiveIndicator status={live.status} lastUpdated={live.lastUpdated} />
       </div>
-      <ReportDetails report={live.report} onSaved={live.applyReport} />
+      <ReportDetails report={live.report} save={reportSaver.save} status={reportSaver.status} onRetry={reportSaver.retry} />
       <SummaryStrip summary={summary} />
       <RollCallList
         entries={entries}
@@ -88,7 +106,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
         onNext={openNext}
       />
       <MissingBarangaysButton reportId={live.report.id} />
-      <ReportRemarks report={live.report} computed={computed} onSaved={live.applyReport} />
+      <ReportRemarks report={live.report} computed={computed} save={reportSaver.save} status={reportSaver.status} />
       <SharePanel url={shareUrl} title={`Barangay Weather SitRep – ${formatShortHeading(live.report.report_at)}`} />
       {isSuperAdmin && <DeleteReportDialog reportId={live.report.id} reportAt={live.report.report_at} />}
     </div>
