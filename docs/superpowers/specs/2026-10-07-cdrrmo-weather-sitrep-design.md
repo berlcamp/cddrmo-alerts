@@ -84,7 +84,7 @@ Browser (encoder) ──Server Actions──▶ Next.js ──supabase-js (user 
 |---|---|---|
 | `/` | public | Current (newest) report, live |
 | `/reports` | public | Archive grouped by day, newest first |
-| `/reports/[id]` | public | A specific report, live; permanent share URL; `opengraph-image` |
+| `/reports/[id]` | public | A specific report, live; permanent share URL; OG image at `/reports/[id]/og` |
 | `/login` | public | "Sign in with Google" |
 | `/auth/callback` | public | OAuth code exchange, allowlist check, links `auth_user_id` |
 | `/unauthorized` | public | Shown when a Google account is not on the allowlist |
@@ -152,7 +152,7 @@ Logos are stored in a public Storage bucket `cdrrmo-assets`.
 
 ### 5.2 People
 
-**`users`**: `email citext unique not null`, `full_name text`, `position text` (default
+**`users`**: `email text unique not null check (email = lower(email))`, `full_name text`, `position text` (default
 "Radio Controller on Duty"), `role text check in ('super_admin','encoder')`, `is_active bool default true`,
 `auth_user_id uuid unique null references auth.users on delete set null`, `last_sign_in_at timestamptz`.
 
@@ -198,10 +198,9 @@ Logos are stored in a public Storage bucket `cdrrmo-assets`.
 
 ### 5.4 Summary logic
 
-The summary logic is implemented once in TypeScript (`lib/summary.ts`), because it has to recompute
-on the client as each Realtime update arrives. It is also mirrored in a SQL function,
-`cdrrmo.report_summary(report_id)`, used by the archive list and the OG image. Both are tested
-against the same fixtures (§11).
+The summary logic is implemented once in TypeScript (`lib/summary.ts`). The same function runs on the
+server (page render, archive list, Open Graph metadata and image) and on the client (recomputed
+as each Realtime update arrives). There is no SQL copy of it.
 
 Only entries with `responded = true` count, unless stated otherwise.
 
@@ -320,15 +319,15 @@ an RLS check for every subscriber on every change, while Broadcast sends each ch
 ### 8.3 Archive (`/reports`)
 
 Grouped by day (Asia/Manila), newest first. Each item shows the time (1050H), active / no response
-counts, average weather, and a badge for any issue. The list is paginated 20 days per page.
+counts, average weather, and a badge for any issue. The list is paginated 50 reports per page.
 
 ### 8.4 Encoder screen (`/admin/reports/[id]`)
 
 - **Top:** report time (editable), prepared by (defaults to the encoder's name and position), and the
   live summary strip.
 - **Roll-call list:** one row per barangay in netcall order, showing the large callsign, the barangay
-  name and a compact status summary. Tapping a row opens an inline editor (a bottom sheet on phones)
-  with:
+  name and a compact status summary. Tapping a row expands an inline editor directly under that row
+  (on all screen sizes), with:
   - **"Responded – all normal"**: sets responded, road passable, river normal, coastal normal (if
     monitored), power with power. Weather and wind stay as selected.
   - **"No response"**: sets `responded = false`.
@@ -350,9 +349,9 @@ counts, average weather, and a badge for any issue. The list is paginated 20 day
 
 - **Users:** a table of email, name, position, role, active, last sign-in, and an "Add staff" dialog
   (email, name, position, role). The super admin row is locked.
-- **Barangays:** a table with inline edit (name, callsign, zone, coastal flag, active) and drag-to-reorder
-  within a zone (sets `sort_order`).
-- **Options:** two lists (weather and wind) with label, severity, active, and reorder.
+- **Barangays:** a table with inline edit (name, callsign, zone, coastal flag, active) and ↑/↓ buttons
+  to reorder within a zone (they swap `sort_order` with the neighbor).
+- **Options:** two lists (weather and wind) with label, severity, active, and ↑/↓ reorder.
 - **Settings:** header text fields and logo upload to `cdrrmo-assets`.
 
 ## 9. Facebook sharing
@@ -362,8 +361,8 @@ counts, average weather, and a badge for any issue. The list is paginated 20 day
   - `og:description`: "15/24 stations active · Light to Moderate rain · Not windy · Roads passable · Rivers normal"
   - `og:url` is the canonical `/reports/[id]`, plus `og:type`, `og:site_name` and the Twitter card.
   - `/` uses the current report's metadata, with `og:url` pointing at `/`.
-- `app/reports/[id]/opengraph-image.tsx` uses `next/og` ImageResponse at 1200×630 to render the navy
-  header and logos, the date and time, a large "15/24 ACTIVE", weather and wind, and status pills for
+- The route handler `app/reports/[id]/og/route.tsx` uses `next/og` ImageResponse at 1200×630 to render the navy
+  header (office text, no remote logos, so the image can never fail on a logo fetch), the date and time, a large "15/24 ACTIVE", weather and wind, and status pills for
   roads, rivers and coastal. It uses the Atkinson Hyperlegible font. The image is generated on
   request, so Facebook gets the numbers current at the time it fetches the link.
 - Share actions:
@@ -388,15 +387,18 @@ counts, average weather, and a badge for any issue. The list is paginated 20 day
 - **Unit (Vitest):** `lib/summary.ts` against fixtures. One fixture is the full 2026-10-07 1050H
   sample, which must give 15 / 9 / "Light to Moderate rain" / "Not windy" / NORMAL / PASSABLE / NORMAL.
   Edge cases: no responders, a tie at the 20% threshold, a single label, overrides.
-- **SQL:** `cdrrmo.report_summary()` checked against the same fixture inserted into a scratch
-  report through the Supabase MCP (cleaned up afterward).
 - **RLS:** scripted checks for anon, a signed-in non-staff user, an encoder and the super admin. Each
   checks allowed and denied select, insert, update and delete per table, the super-admin protection
   trigger, and `claim_staff_account()`.
 - **Realtime:** an integration script subscribes to `cdrrmo:report:<id>` with the anon key, updates
   an entry, and checks that the event arrives within 2 seconds.
-- **E2E (Playwright):** public pages (render, filters, OG meta tags, live update when a row changes in
-  the database) and the encoder flow, using a test session cookie created for a test encoder.
+- **E2E (Playwright):** public pages (render, filters, OG meta tags, OG image response). The live
+  update is checked by `scripts/watch-live.mjs`, which opens the public page in a headless browser
+  while a database row is changed through the Supabase MCP.
+- **Encoder flow:** verified manually by the owner signing in with Google. An automated encoder E2E
+  would need a service-role key or a fake auth user on the shared project, and the app deliberately
+  has neither. The encoder's pure logic (patches, validation, retry backoff, live-state reducer) is
+  unit-tested.
 - **Before completion:** `next build` and lint pass, Supabase security and performance advisors are
   clean for `cdrrmo`, Lighthouse accessibility scores at least 95 on the public page, and a manual check
   at 375, 768, 1024 and 1440px.
@@ -410,7 +412,7 @@ table, charts across reports, an edit-history audit log, and offline encoding.
 
 ```
 app/
-  (public)/page.tsx, reports/page.tsx, reports/[id]/{page.tsx, opengraph-image.tsx}
+  page.tsx, reports/page.tsx, reports/[id]/{page.tsx, og/route.tsx}
   login/, auth/callback/route.ts, unauthorized/
   admin/{layout.tsx, reports/, reports/[id]/, barangays/, options/, settings/, users/}
 components/  report/ (SummaryTiles, BarangayCards, BarangayTable, LiveIndicator, ShareButtons)
