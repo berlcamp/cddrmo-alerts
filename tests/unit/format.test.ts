@@ -30,6 +30,7 @@ describe('Manila formatting', () => {
     expect(toManilaInputValue(AT_1050)).toBe('2026-10-07T10:50');
     expect(fromManilaInputValue('2026-10-07T10:50')).toBe(AT_1050);
     expect(() => fromManilaInputValue('10:50')).toThrow('Invalid date/time');
+    expect(() => fromManilaInputValue('2026-13-45T99:99')).toThrow('Invalid date/time');
   });
 
   it('accepts Postgres timestamps with microseconds and offsets', () => {

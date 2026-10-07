@@ -33,7 +33,8 @@ export const reportPatchSchema = z
 export type ReportPatch = z.infer<typeof reportPatchSchema>;
 
 export const newReportSchema = z.object({
-  report_at_local: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Choose the netcall date and time.'),
+  report_at_local: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Choose the netcall date and time.')
+    .refine((v) => !Number.isNaN(Date.parse(`${v}:00+08:00`)), 'Choose a valid netcall date and time.'),
   prepared_by_name: z.string().trim().min(1, 'Enter who prepared the report.').max(120),
   prepared_by_position: z.string().trim().max(120),
 });

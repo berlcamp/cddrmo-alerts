@@ -31,6 +31,7 @@ describe('newReportSchema', () => {
   it('requires a datetime-local value', () => {
     expect(newReportSchema.safeParse({ report_at_local: '2026-10-07 10:50', prepared_by_name: 'A', prepared_by_position: '' }).success).toBe(false);
     expect(newReportSchema.safeParse({ report_at_local: '2026-10-07T10:50', prepared_by_name: 'A', prepared_by_position: '' }).success).toBe(true);
+    expect(newReportSchema.safeParse({ report_at_local: '2026-13-45T99:99', prepared_by_name: 'A', prepared_by_position: '' }).success).toBe(false);
   });
 });
 

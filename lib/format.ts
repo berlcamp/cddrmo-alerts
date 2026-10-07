@@ -49,5 +49,7 @@ export function toManilaInputValue(iso: string): string {
 
 export function fromManilaInputValue(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new Error('Invalid date/time');
-  return new Date(`${value}:00+08:00`).toISOString();
+  const date = new Date(`${value}:00+08:00`);
+  if (Number.isNaN(date.getTime())) throw new Error('Invalid date/time');
+  return date.toISOString();
 }
