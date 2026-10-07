@@ -23,3 +23,9 @@ export async function requireSuperAdmin(): Promise<StaffUser> {
   if (staff.role !== 'super_admin') redirect('/admin/reports');
   return staff;
 }
+
+/** For Server Actions: returns the caller only if they are the active super admin. */
+export async function getSuperAdminForAction(): Promise<StaffUser | null> {
+  const staff = await getCurrentStaff();
+  return staff?.role === 'super_admin' ? staff : null;
+}
