@@ -1,4 +1,4 @@
--- RLS / auth acceptance test. Run the whole file with the Supabase MCP execute_sql.
+-- RLS / auth acceptance test. Run the whole file with psql (or the SQL editor).
 -- PASS = the call fails with exactly: RLS_TESTS_PASSED
 -- (that final RAISE rolls back every fixture). Any other error names the failing check.
 do $test$
@@ -90,7 +90,24 @@ begin
   select count(*) into n from cdrrmo.claim_staff_account();
   if n > 0 then raise exception 'FAIL: non-Google sign-in claimed a staff account'; end if;
 
+  ---------------------------------------------------------------- email-primary account with a Google identity under a DIFFERENT email must not claim
+  reset role;
+  insert into auth.identities (provider_id, user_id, provider, identity_data, created_at, updated_at)
+    values ('rls-test-other-google', v_encoder_auth, 'google',
+            jsonb_build_object('sub', 'rls-test-other-google', 'email', 'rls-test-someone-else@example.com'), now(), now());
+  set local role authenticated;
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', v_encoder_auth, 'role', 'authenticated', 'email', 'rls-test-encoder@example.com',
+    'app_metadata', json_build_object('provider', 'email', 'providers', json_build_array('email', 'google')))::text, true);
+  select count(*) into n from cdrrmo.claim_staff_account();
+  if n > 0 then raise exception 'FAIL: email account with a mismatched Google identity claimed a staff account'; end if;
+
   ---------------------------------------------------------------- encoder (Google, mixed-case email)
+  reset role;
+  insert into auth.identities (provider_id, user_id, provider, identity_data, created_at, updated_at)
+    values ('rls-test-encoder-google', v_encoder_auth, 'google',
+            jsonb_build_object('sub', 'rls-test-encoder-google', 'email', 'RLS-Test-Encoder@Example.com'), now(), now());
+  set local role authenticated;
   perform set_config('request.jwt.claims', json_build_object(
     'sub', v_encoder_auth, 'role', 'authenticated', 'email', 'RLS-Test-Encoder@Example.com',
     'app_metadata', json_build_object('provider', 'google'))::text, true);

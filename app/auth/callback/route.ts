@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   const { data: staff } = await cdrrmo(supabase).rpc('claim_staff_account').maybeSingle();
   if (!staff) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     return NextResponse.redirect(`${origin}/unauthorized`);
   }
   return NextResponse.redirect(`${origin}${next}`);
