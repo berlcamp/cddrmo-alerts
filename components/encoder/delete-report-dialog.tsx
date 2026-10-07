@@ -48,8 +48,12 @@ export function DeleteReportDialog({ reportId, reportAt }: { reportId: string; r
               disabled={pending || text.trim().toUpperCase() !== expected}
               onClick={() =>
                 startTransition(async () => {
-                  const result = await deleteReport(reportId, text);
-                  if (result && !result.ok) setError(result.message);
+                  try {
+                    const result = await deleteReport(reportId, text);
+                    if (result && !result.ok) setError(result.message);
+                  } catch {
+                    setError("Couldn't delete the report. Check your connection and try again.");
+                  }
                 })
               }
             >

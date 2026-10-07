@@ -40,8 +40,12 @@ function OptionRow({ option, isFirst, isLast }: { option: ConditionOption; isFir
   const [pending, startTransition] = useTransition();
   const move = (direction: 'up' | 'down') =>
     startTransition(async () => {
-      const result = await moveOption(option.id, direction);
-      if (!result.ok) toast.error(result.message);
+      try {
+        const result = await moveOption(option.id, direction);
+        if (!result.ok) toast.error(result.message);
+      } catch {
+        toast.error("Couldn't move it. Check your connection and try again.");
+      }
     });
   return (
     <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-end">

@@ -72,8 +72,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
                 disabled={removing}
                 onClick={() =>
                   startTransition(async () => {
-                    const result = await removeLogo(url);
-                    if (!result.ok) toast.error(result.message);
+                    try {
+                      const result = await removeLogo(url);
+                      if (!result.ok) toast.error(result.message);
+                    } catch {
+                      toast.error("Couldn't remove the logo. Check your connection and try again.");
+                    }
                   })
                 }
               >

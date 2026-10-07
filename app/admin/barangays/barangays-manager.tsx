@@ -50,8 +50,12 @@ function BarangayRow({ barangay, zones, isFirst, isLast }: { barangay: Barangay;
   const [pending, startTransition] = useTransition();
   const move = (direction: 'up' | 'down') =>
     startTransition(async () => {
-      const result = await moveBarangay(barangay.id, direction);
-      if (!result.ok) toast.error(result.message);
+      try {
+        const result = await moveBarangay(barangay.id, direction);
+        if (!result.ok) toast.error(result.message);
+      } catch {
+        toast.error("Couldn't move it. Check your connection and try again.");
+      }
     });
   return (
     <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-end">

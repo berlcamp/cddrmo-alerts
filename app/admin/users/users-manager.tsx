@@ -59,8 +59,12 @@ function StaffRow({ user }: { user: StaffUser }) {
   const locked = user.role === 'super_admin';
   const run = (action: () => Promise<ActionResult>) =>
     startTransition(async () => {
-      const result = await action();
-      if (!result.ok) toast.error(result.message);
+      try {
+        const result = await action();
+        if (!result.ok) toast.error(result.message);
+      } catch {
+        toast.error("Couldn't save the change. Check your connection and try again.");
+      }
     });
 
   return (

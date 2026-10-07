@@ -15,6 +15,17 @@ const EXTENSIONS: Record<string, string> = { 'image/png': 'png', 'image/jpeg': '
 const MAX_LOGOS = 4;
 const MAX_BYTES = 500 * 1024;
 
+const LOAD_FAILED = "Couldn't load the current settings. Try again.";
+
+/** getSettings throws on a Supabase error; actions must return a result instead of throwing. */
+async function loadSettings() {
+  try {
+    return await getSettings();
+  } catch {
+    return null;
+  }
+}
+
 export async function saveSettings(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
   const parsed = settingsSchema.safeParse({
@@ -39,7 +50,8 @@ export async function uploadLogo(_prev: ActionResult | null, formData: FormData)
   const ext = EXTENSIONS[file.type];
   if (!ext) return fail('Use a PNG, JPG or WebP image.');
   if (file.size > MAX_BYTES) return fail('The logo must be 500 KB or smaller.');
-  const settings = await getSettings();
+  const settings = await loadSettings();
+  if (!settings) return fail(LOAD_FAILED, true);
   if (settings.logo_urls.length >= MAX_LOGOS) return fail(`Remove a logo first (maximum ${MAX_LOGOS}).`);
 
   const supabase = await createClient();
@@ -55,7 +67,8 @@ export async function uploadLogo(_prev: ActionResult | null, formData: FormData)
 
 export async function removeLogo(url: string): Promise<ActionResult> {
   if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
-  const settings = await getSettings();
+  const settings = await loadSettings();
+  if (!settings) return fail(LOAD_FAILED, true);
   if (!settings.logo_urls.includes(url)) return fail('Logo not found.');
   const supabase = await createClient();
   const path = url.split(PUBLIC_MARKER)[1];
