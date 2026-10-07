@@ -19,7 +19,7 @@ import { ReportHeader } from './report-header';
 import { ShareButtons } from './share-buttons';
 import { SummaryTiles } from './summary-tiles';
 
-const LINK = 'font-bold text-primary underline-offset-4 hover:underline';
+const LINK = 'inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline';
 
 export function LiveReportView({ initial, options, settings, isLatest, shareUrl }: {
   initial: ReportBundle;
@@ -81,7 +81,7 @@ export function LiveReportView({ initial, options, settings, isLatest, shareUrl 
         <nav aria-label="Reports" className="flex flex-wrap gap-6 border-t pt-4">
           <Link href="/reports" className={LINK}>All reports</Link>
           {!isLatest && <Link href="/" className={LINK}>View latest report</Link>}
-          <Link href="/login" className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline">Staff sign in</Link>
+          <Link href="/login" className="inline-flex min-h-11 items-center ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline">Staff sign in</Link>
         </nav>
       </main>
     </>

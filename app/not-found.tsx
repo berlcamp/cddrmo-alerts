@@ -6,8 +6,8 @@ export default function NotFound() {
       <h1 className="text-2xl font-bold">Report not found</h1>
       <p className="mt-2 text-muted-foreground">This report doesn&apos;t exist or was removed.</p>
       <div className="mt-6 flex justify-center gap-6 font-bold">
-        <Link href="/" className="text-primary underline-offset-4 hover:underline">Current report</Link>
-        <Link href="/reports" className="text-primary underline-offset-4 hover:underline">All reports</Link>
+        <Link href="/" className="inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">Current report</Link>
+        <Link href="/reports" className="inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">All reports</Link>
       </div>
     </main>
   );

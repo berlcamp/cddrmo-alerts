@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'Archive of Barangay Weather SitReps from the Ozamiz City CDRRMO netcall.',
 };
 
-const LINK = 'font-bold text-primary underline-offset-4 hover:underline';
+const LINK = 'inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline';
 
 export default async function ArchivePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const page = Math.max(1, Number.parseInt((await searchParams).page ?? '1', 10) || 1);

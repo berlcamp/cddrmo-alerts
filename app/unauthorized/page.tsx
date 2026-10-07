@@ -14,8 +14,8 @@ export default function UnauthorizedPage() {
           Your Google account is not on the CDRRMO staff list. Contact the CDRRMO administrator to be added.
         </p>
         <div className="flex justify-center gap-4 font-bold">
-          <Link href="/login" className="text-primary underline-offset-4 hover:underline">Try another account</Link>
-          <Link href="/" className="text-primary underline-offset-4 hover:underline">Public reports</Link>
+          <Link href="/login" className="inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">Try another account</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">Public reports</Link>
         </div>
       </div>
     </main>
