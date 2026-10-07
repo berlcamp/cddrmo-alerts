@@ -54,7 +54,7 @@ This system replaces that with:
 ```
 Browser (public)  ──SSR page──▶  Next.js 16 (Vercel)  ──supabase-js (anon, schema cdrrmo)──▶  Postgres (RLS)
       ▲                                                                                        │
-      └──── Supabase Realtime Broadcast (public channels) ◀── realtime.send() in triggers ◀──┘
+      └──── Supabase Realtime Broadcast (private, read-only) ◀── realtime.send() in triggers ◀──┘
 
 Browser (encoder) ──Server Actions──▶ Next.js ──supabase-js (user JWT)──▶ Postgres (RLS)
       ▲
@@ -250,7 +250,11 @@ If a summary override is non-empty, it replaces the computed value.
 ## 7. Real-time updates
 
 **Mechanism:** Supabase Realtime **Broadcast**, sent from Postgres triggers via
-`realtime.send(payload jsonb, event text, topic text, private boolean)` with `private = false`.
+`realtime.send(payload jsonb, event text, topic text, private boolean)` with `private = true`.
+The channels are **private with a read-only policy**: `realtime.messages` has one `select` policy for
+`anon, authenticated` on `cdrrmo:%` broadcast topics and **no insert/update policy**, so viewers can
+listen but no client can send (public channels would accept forged sends with the anon key). Clients
+subscribe with `channel(topic, { config: { private: true } })` (migration `0005_private_realtime.sql`).
 Postgres Changes is not used. With many public viewers during a typhoon, Postgres Changes would run
 an RLS check for every subscriber on every change, while Broadcast sends each change once.
 
@@ -265,8 +269,11 @@ an RLS check for every subscriber on every change, while Broadcast sends each ch
 **Client behavior** (`useLiveReport(reportId, initialData)` hook, used by both the public and encoder screens):
 
 - Starts from the server-rendered snapshot, then subscribes to the report's topic.
+- Validates each payload (zod, `lib/live/payloads.ts`) and drops malformed ones or ones stamped more
+  than 5 minutes ahead of the viewer's clock.
 - Applies each `entry` / `report` event to local state by id. An event is ignored if its `updated_at`
-  is older than what the page already has.
+  is older than what the page already has. On a resync, a live row only beats the fetched row if it is
+  newer *and* stamped no later than the moment the fetch started; otherwise the server row wins.
 - Recomputes the summary with `lib/summary.ts` after every change.
 - On (re)connect, `visibilitychange` to visible, or `online`, the hook fetches the whole report again
   (anon select) to cover any events missed while disconnected.

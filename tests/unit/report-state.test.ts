@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { initLiveState, lastUpdatedAt, liveReducer } from '@/lib/live/report-state';
+import { initLiveState, lastUpdatedAt, liveReducer, sortEntries } from '@/lib/live/report-state';
+import type { ReportEntry } from '@/lib/types';
 import { makeEntry, SAMPLE_ENTRIES, SAMPLE_REPORT } from '../fixtures/sample-sitrep';
 
+const AFTER = Date.parse('2026-10-07T05:00:00.000Z');
 const base = () => initLiveState({ report: SAMPLE_REPORT, entries: [...SAMPLE_ENTRIES].reverse() });
 
 describe('liveReducer', () => {
@@ -65,7 +67,7 @@ describe('liveReducer', () => {
         liveReducer(base(), { type: 'entry', payload: { ...SAMPLE_ENTRIES[1], remarks: 'live', updated_at: '2026-10-07T02:55:00.000Z' } }),
         { type: 'report', payload: { ...SAMPLE_REPORT, remarks: 'live-report', updated_at: '2026-10-07T03:00:00.000Z' } },
       );
-      const next = liveReducer(live, { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES } });
+      const next = liveReducer(live, { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES }, fetchStartedAt: AFTER });
       expect(next.entries.find((e) => e.id === 'e2')?.remarks).toBe('live');
       expect(next.report.remarks).toBe('live-report');
     });
@@ -73,14 +75,14 @@ describe('liveReducer', () => {
     it('applies newer snapshot rows', () => {
       const newerReport = { ...SAMPLE_REPORT, remarks: 'snap', updated_at: '2026-10-07T04:00:00.000Z' };
       const entries = SAMPLE_ENTRIES.map((e) => (e.id === 'e2' ? { ...e, remarks: 'snap', updated_at: '2026-10-07T04:00:00.000Z' } : e));
-      const next = liveReducer(base(), { type: 'merge', bundle: { report: newerReport, entries } });
+      const next = liveReducer(base(), { type: 'merge', bundle: { report: newerReport, entries }, fetchStartedAt: AFTER });
       expect(next.entries.find((e) => e.id === 'e2')?.remarks).toBe('snap');
       expect(next.report.remarks).toBe('snap');
       expect(next.deleted).toBe(false);
     });
 
     it('drops entries missing from the snapshot', () => {
-      const next = liveReducer(base(), { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES.slice(1) } });
+      const next = liveReducer(base(), { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES.slice(1) }, fetchStartedAt: AFTER });
       expect(next.entries).toHaveLength(23);
       expect(next.entries.some((e) => e.id === SAMPLE_ENTRIES[0].id)).toBe(false);
     });
@@ -88,7 +90,48 @@ describe('liveReducer', () => {
     it('behaves like reset for a different report id', () => {
       const other = { ...SAMPLE_REPORT, id: 'r2', updated_at: '2000-01-01T00:00:00.000Z' };
       const bundle = { report: other, entries: SAMPLE_ENTRIES.slice(0, 2).map((e) => ({ ...e, report_id: 'r2' })) };
-      expect(liveReducer(base(), { type: 'merge', bundle })).toEqual(liveReducer(base(), { type: 'reset', bundle }));
+      expect(liveReducer(base(), { type: 'merge', bundle, fetchStartedAt: AFTER })).toEqual(liveReducer(base(), { type: 'reset', bundle }));
     });
+  });
+});
+
+describe('liveReducer robustness', () => {
+  it('never throws on a malformed entry payload', () => {
+    const broken: Record<string, unknown> = { ...SAMPLE_ENTRIES[1] };
+    delete broken.barangay_name;
+    const bad = broken as unknown as ReportEntry;
+    expect(() => liveReducer(base(), { type: 'entry', payload: bad })).not.toThrow();
+    expect(() => sortEntries([bad, { ...bad, id: 'e2b' }, ...SAMPLE_ENTRIES])).not.toThrow();
+    const twice = liveReducer(base(), { type: 'entry', payload: { ...bad, id: 'e2b' } });
+    expect(() => liveReducer(twice, { type: 'entry', payload: bad })).not.toThrow();
+  });
+
+  it('lets a resync correct a far-future forged row', () => {
+    const forged = { ...SAMPLE_ENTRIES[1], road: 'unpassable' as const, updated_at: '9999-01-01T00:00:00.000Z' };
+    const poisoned = liveReducer(base(), { type: 'entry', payload: forged });
+    expect(poisoned.entries.find((e) => e.id === 'e2')?.road).toBe('unpassable');
+    const fetchStartedAt = Date.parse('2026-10-07T03:00:00.000Z');
+    const next = liveReducer(poisoned, { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES }, fetchStartedAt });
+    expect(next.entries.find((e) => e.id === 'e2')).toEqual(SAMPLE_ENTRIES[1]);
+  });
+
+  it('lets a resync correct a far-future forged report', () => {
+    const forged = { ...SAMPLE_REPORT, weather_summary_override: 'FAKE', updated_at: '9999-01-01T00:00:00.000Z' };
+    const poisoned = liveReducer(base(), { type: 'report', payload: forged });
+    const next = liveReducer(poisoned, {
+      type: 'merge',
+      bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES },
+      fetchStartedAt: Date.parse('2026-10-07T03:00:00.000Z'),
+    });
+    expect(next.report).toEqual(SAMPLE_REPORT);
+  });
+
+  it('keeps a live row newer than the snapshot only when it predates the fetch', () => {
+    const live = liveReducer(base(), { type: 'entry', payload: { ...SAMPLE_ENTRIES[1], remarks: 'live', updated_at: '2026-10-07T02:55:00.000Z' } });
+    const bundle = { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES };
+    const before = liveReducer(live, { type: 'merge', bundle, fetchStartedAt: Date.parse('2026-10-07T02:56:00.000Z') });
+    expect(before.entries.find((e) => e.id === 'e2')?.remarks).toBe('live');
+    const after = liveReducer(live, { type: 'merge', bundle, fetchStartedAt: Date.parse('2026-10-07T02:54:00.000Z') });
+    expect(after.entries.find((e) => e.id === 'e2')?.remarks).toBe(SAMPLE_ENTRIES[1].remarks);
   });
 });

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { fetchReportBundle } from '@/lib/data/report-bundle';
-import { initLiveState, lastUpdatedAt, liveReducer, type Deleted } from '@/lib/live/report-state';
+import { parseEntryPayload, parseReportPayload } from '@/lib/live/payloads';
+import { initLiveState, lastUpdatedAt, liveReducer } from '@/lib/live/report-state';
 import { getBrowserClient } from '@/lib/supabase/browser';
 import type { Report, ReportBundle, ReportEntry } from '@/lib/types';
 
@@ -12,12 +13,13 @@ const FLASH_MS = 1500;
 
 export function useLiveReport(initial: ReportBundle) {
   const [state, dispatch] = useReducer(liveReducer, initial, initLiveState);
-  const [seenInitial, setSeenInitial] = useState(initial);
-  if (seenInitial !== initial) {
-    // New server snapshot (router.refresh or navigation): adopt it.
-    setSeenInitial(initial);
-    dispatch({ type: 'merge', bundle: initial });
-  }
+  const seenInitial = useRef(initial);
+  useEffect(() => {
+    if (seenInitial.current === initial) return;
+    // New server snapshot (router.refresh or navigation): adopt it. Live rows stamped after now lose to it.
+    seenInitial.current = initial;
+    dispatch({ type: 'merge', bundle: initial, fetchStartedAt: Date.now() });
+  }, [initial]);
 
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [flashIds, setFlashIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -41,8 +43,9 @@ export function useLiveReport(initial: ReportBundle) {
 
   const resync = useCallback(async () => {
     try {
+      const fetchStartedAt = Date.now();
       const bundle = await fetchReportBundle(getBrowserClient(), reportId);
-      if (bundle) dispatch({ type: 'merge', bundle });
+      if (bundle) dispatch({ type: 'merge', bundle, fetchStartedAt });
       else dispatch({ type: 'report', payload: { id: reportId, deleted: true } });
     } catch {
       // Keep showing current data; the status indicator tells the viewer we're reconnecting.
@@ -52,14 +55,16 @@ export function useLiveReport(initial: ReportBundle) {
   useEffect(() => {
     const supabase = getBrowserClient();
     const channel = supabase
-      .channel(`cdrrmo:report:${reportId}`)
+      .channel(`cdrrmo:report:${reportId}`, { config: { private: true } })
       .on('broadcast', { event: 'entry' }, ({ payload }) => {
-        const entry = payload as ReportEntry | Deleted;
+        const entry = parseEntryPayload(payload);
+        if (!entry) return; // malformed or future-dated: ignore
         dispatch({ type: 'entry', payload: entry });
         if (!('deleted' in entry)) flash(entry.id);
       })
       .on('broadcast', { event: 'report' }, ({ payload }) => {
-        dispatch({ type: 'report', payload: payload as Report | Deleted });
+        const report = parseReportPayload(payload);
+        if (report) dispatch({ type: 'report', payload: report });
       })
       .subscribe((channelStatus) => {
         if (channelStatus === 'SUBSCRIBED') {

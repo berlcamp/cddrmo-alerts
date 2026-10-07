@@ -1,5 +1,5 @@
 // Usage: node --env-file=.env.local scripts/check-realtime.mjs <reportId>
-// Subscribes like a public visitor (anon key). Exits 0 when an `entry` broadcast arrives.
+// Subscribes like a public visitor (anon key) on the private, read-only channel. Exits 0 when an `entry` broadcast arrives.
 import { createClient } from '@supabase/supabase-js';
 
 const [reportId] = process.argv.slice(2);
@@ -15,7 +15,7 @@ const timer = setTimeout(() => {
 }, 90_000);
 
 supabase
-  .channel(`cdrrmo:report:${reportId}`)
+  .channel(`cdrrmo:report:${reportId}`, { config: { private: true } })
   .on('broadcast', { event: 'entry' }, ({ payload }) => {
     console.log('RECEIVED entry', payload.id, JSON.stringify(payload.remarks));
     clearTimeout(timer);

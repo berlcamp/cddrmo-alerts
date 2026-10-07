@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { parseReportsChanged } from '@/lib/live/payloads';
 import { getBrowserClient } from '@/lib/supabase/browser';
 
 interface NewerReport {
@@ -15,9 +16,10 @@ export function useNewerReport(currentId: string, currentReportAt: string): { id
   useEffect(() => {
     const supabase = getBrowserClient();
     const channel = supabase
-      .channel('cdrrmo:reports')
+      .channel('cdrrmo:reports', { config: { private: true } })
       .on('broadcast', { event: 'reports_changed' }, ({ payload }) => {
-        const p = payload as { id: string; report_at: string; op: 'INSERT' | 'UPDATE' | 'DELETE' };
+        const p = parseReportsChanged(payload);
+        if (!p) return;
         if (p.op !== 'DELETE' && p.id !== currentId && Date.parse(p.report_at) > Date.parse(currentReportAt)) {
           setNewer({ forId: currentId, id: p.id, report_at: p.report_at });
         }

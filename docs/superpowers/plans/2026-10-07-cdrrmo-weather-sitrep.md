@@ -7,7 +7,7 @@
 **Architecture:**
 - **Data and access:** Postgres (schema `cdrrmo` on the shared Supabase project "Asenso") holds all data. Access is enforced with row-level security (RLS) and an email allowlist (`cdrrmo.users`).
 - **Writes:** go through Next.js Server Actions using the signed-in user's session.
-- **Live updates:** Postgres triggers push every row change to public Supabase Realtime **Broadcast** channels, and a client hook applies them to the server-rendered page.
+- **Live updates:** Postgres triggers push every row change to private, read-only Supabase Realtime **Broadcast** channels, and a client hook applies them to the server-rendered page.
 - **Summary:** one pure TypeScript module (`lib/summary.ts`) computes the summary on both server and client.
 
 **Tech Stack:**
@@ -25,7 +25,7 @@
 - Roles: `super_admin`, `encoder` only.
 - Emails are stored lowercase (`check (email = lower(email))`).
 - **No draft/publish.** Reports are public from creation and are always live. Only the super admin deletes reports.
-- Realtime uses **Broadcast** via `realtime.send(payload, event, topic, false)`. Topics: `cdrrmo:report:<id>` (events `entry`, `report`) and `cdrrmo:reports` (event `reports_changed`).
+- Realtime uses **private Broadcast** via `realtime.send(payload, event, topic, true)` plus a read-only `realtime.messages` policy (select for anon/authenticated on `cdrrmo:%` broadcast topics; no insert/update policy, so clients cannot send). Clients subscribe with `{ config: { private: true } }` (`0005_private_realtime.sql`; 0003 below shows the original public version it replaces). Topics: `cdrrmo:report:<id>` (events `entry`, `report`) and `cdrrmo:reports` (event `reports_changed`).
 - Average weather/wind rule: count only labels with share **≥ 20%** of responders that reported that field. Use the range from the lowest to the highest severity among them. If no label reaches 20%, use the range over all reported labels.
 - Display timezone **Asia/Manila** (fixed +08:00). Report time format: `October 7, 2026 – 1050H`.
 - UI: Atkinson Hyperlegible, body ≥ 16px, touch targets ≥ 44px, visible focus rings, status never shown by color alone, Lucide icons (no emoji), dark mode via `prefers-color-scheme`.
