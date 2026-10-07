@@ -20,7 +20,7 @@ export function ReportHeader({ settings }: { settings: Settings }) {
           {settings.office_lines.map((line) => (
             <p key={line} className="hidden text-sm opacity-90 sm:block">{line}</p>
           ))}
-          <p className="text-xs opacity-80">
+          <p className="text-sm opacity-90">
             {settings.network_name} · Call sign: {settings.call_sign} · {settings.radio_frequency}
           </p>
         </div>

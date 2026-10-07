@@ -68,7 +68,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="cursor-pointer text-danger"
+                className="h-11 cursor-pointer text-danger"
                 disabled={removing}
                 onClick={() =>
                   startTransition(async () => {

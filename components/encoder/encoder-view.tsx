@@ -38,6 +38,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
   const saver = useEntrySaver(updateEntry, live.applyEntry);
   const reportSaver = useReportSaver(live.report.id, live.applyReport);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
 
   const entries = useMemo(() => live.entries.map((e) => applyPatch(e, saver.pending[e.id])), [live.entries, saver.pending]);
   const summary = useMemo(() => summarizeReport(live.report, entries, options), [live.report, entries, options]);
@@ -80,7 +81,9 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
 
   function openNext(id: string) {
     const index = entries.findIndex((e) => e.id === id);
-    setOpenId(entries[index + 1]?.id ?? null);
+    const nextId = entries[index + 1]?.id ?? null;
+    setOpenId(nextId);
+    setFocusId(nextId);
   }
 
   return (
@@ -94,7 +97,11 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
       <RollCallList
         entries={entries}
         openId={openId}
-        onToggle={(id) => setOpenId((current) => (current === id ? null : id))}
+        focusId={focusId}
+        onToggle={(id) => {
+          setFocusId(null);
+          setOpenId((current) => (current === id ? null : id));
+        }}
         states={saver.states}
         optionLabel={optionLabel}
         flashIds={live.flashIds}

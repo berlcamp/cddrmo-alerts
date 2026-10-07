@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, CircleCheck, CircleX } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import type { SaveState } from '@/hooks/use-entry-saver';
 import { allNormalPatch, conditionPatch, noResponsePatch, remarksPatch } from '@/lib/encoder-patches';
@@ -22,7 +23,7 @@ const POWER = [
   { value: 'no_power' as Power, label: 'No power', tone: 'danger' as const },
 ];
 
-export function EntryEditor({ entry, weatherOptions, windOptions, saveState, onPatch, onRetry, onDiscard, onNext }: {
+export function EntryEditor({ entry, weatherOptions, windOptions, saveState, onPatch, onRetry, onDiscard, onNext, focusOnOpen = false }: {
   entry: ReportEntry;
   weatherOptions: ConditionOption[];
   windOptions: ConditionOption[];
@@ -31,12 +32,19 @@ export function EntryEditor({ entry, weatherOptions, windOptions, saveState, onP
   onRetry: (id: string) => void;
   onDiscard: (id: string) => void;
   onNext: (id: string) => void;
+  /** Move keyboard focus to "Responded – all normal" when opened via "Next barangay" (spec §8.4). */
+  focusOnOpen?: boolean;
 }) {
   const patch = (p: EntryPatch) => onPatch(entry.id, p);
+  const allNormalRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    // preventScroll: the roll-call list already scrolls the opened row into view.
+    if (focusOnOpen) allNormalRef.current?.focus({ preventScroll: true });
+  }, [focusOnOpen]);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={() => patch(allNormalPatch(entry))} className="h-11 cursor-pointer bg-ok text-on-status hover:bg-ok/90">
+        <Button ref={allNormalRef} type="button" onClick={() => patch(allNormalPatch(entry))} className="h-11 cursor-pointer bg-ok text-on-status hover:bg-ok/90">
           <CircleCheck aria-hidden /> Responded – all normal
         </Button>
         <Button type="button" variant="outline" onClick={() => patch(noResponsePatch())} className="h-11 cursor-pointer border-danger text-danger hover:bg-danger-soft">
@@ -65,7 +73,19 @@ export function EntryEditor({ entry, weatherOptions, windOptions, saveState, onP
       </div>
       <div className="space-y-1.5">
         <label htmlFor={`remarks-${entry.id}`} className="text-sm font-bold">Remarks</label>
-        <BlurInput id={`remarks-${entry.id}`} value={entry.remarks} onCommit={(text) => patch(remarksPatch(text))} placeholder="Optional" />
+        <BlurInput
+          id={`remarks-${entry.id}`}
+          value={entry.remarks}
+          onCommit={(text) => patch(remarksPatch(text))}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            event.currentTarget.blur(); // commits the remark
+            onNext(entry.id);
+          }}
+          enterKeyHint="next"
+          placeholder="Optional"
+        />
       </div>
       {saveState?.state === 'failed' && (
         <div role="alert" className="flex flex-wrap items-center gap-2 rounded-md bg-danger-soft px-3 py-2 text-danger">

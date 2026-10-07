@@ -33,9 +33,11 @@ function EntrySummaryLine({ entry, optionLabel }: { entry: ReportEntry; optionLa
   );
 }
 
-export function RollCallList({ entries, openId, onToggle, states, optionLabel, flashIds, weatherOptions, windOptions, onPatch, onRetry, onDiscard, onNext }: {
+export function RollCallList({ entries, openId, focusId = null, onToggle, states, optionLabel, flashIds, weatherOptions, windOptions, onPatch, onRetry, onDiscard, onNext }: {
   entries: ReportEntry[];
   openId: string | null;
+  /** Row whose editor should take keyboard focus when it opens (set by "Next barangay"). */
+  focusId?: string | null;
   onToggle: (id: string) => void;
   states: Record<string, SaveState>;
   optionLabel: (id: string | null) => string;
@@ -89,6 +91,7 @@ export function RollCallList({ entries, openId, onToggle, states, optionLabel, f
                         onRetry={onRetry}
                         onDiscard={onDiscard}
                         onNext={onNext}
+                        focusOnOpen={entry.id === focusId}
                       />
                     </div>
                   )}
