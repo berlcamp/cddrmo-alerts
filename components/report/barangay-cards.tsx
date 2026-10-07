@@ -54,7 +54,7 @@ export function BarangayCards({ groups, optionLabel, flashIds }: {
   flashIds: ReadonlySet<string>;
 }) {
   return (
-    <div className="space-y-6 md:hidden">
+    <div className="space-y-6 lg:hidden">
       {groups.map((group) => (
         <section key={group.zone} aria-label={`${group.zone} barangays`}>
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">{group.zone}</h2>

@@ -19,7 +19,7 @@ export function BarangayTable({ groups, optionLabel, flashIds, numbers }: {
   numbers: Map<string, number>;
 }) {
   return (
-    <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
+    <div className="hidden overflow-x-auto rounded-xl border bg-card lg:block">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Barangay weather situation</caption>
         <thead className="bg-muted text-xs uppercase tracking-wide text-muted-foreground">
