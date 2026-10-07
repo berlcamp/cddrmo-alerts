@@ -13,6 +13,7 @@ export interface Deleted {
 
 export type LiveAction =
   | { type: 'reset'; bundle: ReportBundle }
+  | { type: 'merge'; bundle: ReportBundle }
   | { type: 'entry'; payload: ReportEntry | Deleted }
   | { type: 'report'; payload: Report | Deleted };
 
@@ -38,6 +39,17 @@ export function liveReducer(state: LiveState, action: LiveAction): LiveState {
   switch (action.type) {
     case 'reset':
       return initLiveState(action.bundle);
+    case 'merge': {
+      const { bundle } = action;
+      if (bundle.report.id !== state.report.id) return initLiveState(bundle);
+      const current = new Map(state.entries.map((e) => [e.id, e]));
+      const entries = bundle.entries.map((fetched) => {
+        const live = current.get(fetched.id);
+        return live && isOlder(fetched.updated_at, live.updated_at) ? live : fetched;
+      });
+      const report = isOlder(bundle.report.updated_at, state.report.updated_at) ? state.report : bundle.report;
+      return { report, entries: sortEntries(entries), deleted: false };
+    }
     case 'entry': {
       const payload = action.payload;
       if (isDeleted(payload)) {

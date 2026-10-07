@@ -16,7 +16,7 @@ export function useLiveReport(initial: ReportBundle) {
   if (seenInitial !== initial) {
     // New server snapshot (router.refresh or navigation): adopt it.
     setSeenInitial(initial);
-    dispatch({ type: 'reset', bundle: initial });
+    dispatch({ type: 'merge', bundle: initial });
   }
 
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
@@ -42,7 +42,7 @@ export function useLiveReport(initial: ReportBundle) {
   const resync = useCallback(async () => {
     try {
       const bundle = await fetchReportBundle(getBrowserClient(), reportId);
-      if (bundle) dispatch({ type: 'reset', bundle });
+      if (bundle) dispatch({ type: 'merge', bundle });
       else dispatch({ type: 'report', payload: { id: reportId, deleted: true } });
     } catch {
       // Keep showing current data; the status indicator tells the viewer we're reconnecting.

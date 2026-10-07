@@ -58,4 +58,37 @@ describe('liveReducer', () => {
     entries[5] = { ...entries[5], updated_at: '2026-10-07T03:10:00.123456+00:00' };
     expect(lastUpdatedAt({ report: SAMPLE_REPORT, entries })).toBe('2026-10-07T03:10:00.123456+00:00');
   });
+
+  describe('merge', () => {
+    it('keeps newer live entry and report when the snapshot is older', () => {
+      const live = liveReducer(
+        liveReducer(base(), { type: 'entry', payload: { ...SAMPLE_ENTRIES[1], remarks: 'live', updated_at: '2026-10-07T02:55:00.000Z' } }),
+        { type: 'report', payload: { ...SAMPLE_REPORT, remarks: 'live-report', updated_at: '2026-10-07T03:00:00.000Z' } },
+      );
+      const next = liveReducer(live, { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES } });
+      expect(next.entries.find((e) => e.id === 'e2')?.remarks).toBe('live');
+      expect(next.report.remarks).toBe('live-report');
+    });
+
+    it('applies newer snapshot rows', () => {
+      const newerReport = { ...SAMPLE_REPORT, remarks: 'snap', updated_at: '2026-10-07T04:00:00.000Z' };
+      const entries = SAMPLE_ENTRIES.map((e) => (e.id === 'e2' ? { ...e, remarks: 'snap', updated_at: '2026-10-07T04:00:00.000Z' } : e));
+      const next = liveReducer(base(), { type: 'merge', bundle: { report: newerReport, entries } });
+      expect(next.entries.find((e) => e.id === 'e2')?.remarks).toBe('snap');
+      expect(next.report.remarks).toBe('snap');
+      expect(next.deleted).toBe(false);
+    });
+
+    it('drops entries missing from the snapshot', () => {
+      const next = liveReducer(base(), { type: 'merge', bundle: { report: SAMPLE_REPORT, entries: SAMPLE_ENTRIES.slice(1) } });
+      expect(next.entries).toHaveLength(23);
+      expect(next.entries.some((e) => e.id === SAMPLE_ENTRIES[0].id)).toBe(false);
+    });
+
+    it('behaves like reset for a different report id', () => {
+      const other = { ...SAMPLE_REPORT, id: 'r2', updated_at: '2000-01-01T00:00:00.000Z' };
+      const bundle = { report: other, entries: SAMPLE_ENTRIES.slice(0, 2).map((e) => ({ ...e, report_id: 'r2' })) };
+      expect(liveReducer(base(), { type: 'merge', bundle })).toEqual(liveReducer(base(), { type: 'reset', bundle }));
+    });
+  });
 });
