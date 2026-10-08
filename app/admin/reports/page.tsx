@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { requireStaff } from '@/lib/auth';
 import { listRecentReports } from '@/lib/data/admin';
+import { Badge } from '@/components/ui/badge';
 import { formatShortHeading } from '@/lib/format';
 import { NewReportDialog } from './new-report-dialog';
 
@@ -25,6 +26,7 @@ export default async function AdminReportsPage() {
             <li key={report.id}>
               <Link href={`/admin/reports/${report.id}`} className="flex min-h-14 items-center gap-4 px-4 py-3 transition-colors hover:bg-accent">
                 <span className="font-bold tabular">{formatShortHeading(report.report_at)}</span>
+                {report.status === 'draft' && <Badge variant="outline" className="border-warn/40 bg-warn-soft text-warn">Draft</Badge>}
                 <span className="tabular text-muted-foreground">{active}/{total} responded</span>
                 <span className="hidden text-muted-foreground sm:inline">{report.prepared_by_name}</span>
                 <ChevronRight className="ml-auto size-5 text-muted-foreground" aria-hidden />

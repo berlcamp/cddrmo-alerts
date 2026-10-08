@@ -14,6 +14,7 @@ import { summarizeReport, type SummaryOverrides } from '@/lib/summary';
 import type { ConditionOption, ReportBundle } from '@/lib/types';
 import { DeleteReportDialog } from './delete-report-dialog';
 import { MissingBarangaysButton } from './missing-barangays-button';
+import { PublishBar } from './publish-bar';
 import { ReportDetails } from './report-details';
 import { ReportRemarks } from './report-remarks';
 import { RollCallList } from './roll-call-list';
@@ -34,7 +35,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
   isSuperAdmin: boolean;
   shareUrl: string;
 }) {
-  const live = useLiveReport(initial);
+  const live = useLiveReport(initial, { staff: true });
   const saver = useEntrySaver(updateEntry, live.applyEntry);
   const reportSaver = useReportSaver(live.report.id, live.applyReport);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -92,6 +93,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
         <Link href="/admin/reports" className="inline-flex min-h-11 items-center text-sm font-bold text-primary underline-offset-4 hover:underline">← All reports</Link>
         <LiveIndicator status={live.status} lastUpdated={live.lastUpdated} />
       </div>
+      {live.report.status === 'draft' && <PublishBar reportId={live.report.id} hasUnsaved={hasUnsaved} onPublished={live.applyReport} />}
       <ReportDetails report={live.report} save={reportSaver.save} status={reportSaver.status} onRetry={reportSaver.retry} />
       <SummaryStrip summary={summary} />
       <RollCallList
@@ -114,7 +116,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
       />
       <MissingBarangaysButton reportId={live.report.id} />
       <ReportRemarks report={live.report} computed={computed} save={reportSaver.save} status={reportSaver.status} />
-      <SharePanel url={shareUrl} title={`Barangay Weather SitRep – ${formatShortHeading(live.report.report_at)}`} />
+      {live.report.status === 'published' && <SharePanel url={shareUrl} title={`Barangay Weather SitRep – ${formatShortHeading(live.report.report_at)}`} />}
       {isSuperAdmin && <DeleteReportDialog reportId={live.report.id} reportAt={live.report.report_at} />}
     </div>
   );

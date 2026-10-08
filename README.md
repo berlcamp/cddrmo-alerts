@@ -28,12 +28,12 @@ Everything can run against a local Supabase stack (Docker required). This projec
 - Authentication → URL Configuration → **Redirect URLs**: add `http://localhost:3000/auth/callback` and `https://<production-domain>/auth/callback`.
 - Authentication → Providers: enable **Google**.
 - Realtime: the app uses **private** Broadcast channels (`cdrrmo:*`) with a read-only `realtime.messages` policy (`0005`), so public channel access is not required by this app. Leave that project setting as it is for the other apps on the shared project.
-- Migrations are in `supabase/migrations`. `0001` is already applied to the shared project; apply `0002`–`0006` by hand as described below.
+- Migrations are in `supabase/migrations`. `0001` is already applied to the shared project; apply `0002`–`0007` by hand as described below.
 
 ## Deploying the database to the shared Asenso project
 Only with the owner's approval. **Never run `supabase db push` or `supabase migration repair` against the shared project.** `0001` was applied through the dashboard with a timestamp version, and the project's `supabase_migrations.schema_migrations` also holds other apps' versions, so `supabase link` + `db push` would try to re-run `0001` or demand a repair that rewrites another app's history.
 
-Apply the files **by hand, one at a time, in order** — `0002_auth_rls.sql`, `0003_realtime.sql`, `0004_storage.sql`, `0005_private_realtime.sql`, `0006_claim_hardening.sql` — with `psql "<remote DB URL>" -v ON_ERROR_STOP=1 -f <file>` or by pasting each file into the SQL editor. Stop at the first error.
+Apply the files **by hand, one at a time, in order** — `0002_auth_rls.sql`, `0003_realtime.sql`, `0004_storage.sql`, `0005_private_realtime.sql`, `0006_claim_hardening.sql`, `0007_drafts.sql` — with `psql "<remote DB URL>" -v ON_ERROR_STOP=1 -f <file>` or by pasting each file into the SQL editor. Stop at the first error.
 
 **Pre-checks** (run first; stop if either is wrong):
 ```sql
@@ -50,6 +50,8 @@ select public, file_size_limit, allowed_mime_types from storage.buckets where id
 select policyname, cmd, roles from pg_policies where schemaname = 'realtime' and tablename = 'messages' and policyname like 'cdrrmo%';
 -- 0006: the claim requires a matching Google identity.
 select pg_get_functiondef('cdrrmo.claim_staff_account()'::regprocedure) like '%auth.identities%' as hardened;
+-- 0007: existing reports stay public; only reports created afterwards start as drafts.
+select status, count(*) from cdrrmo.reports group by status;   -- expect only 'published' right after applying
 ```
 - Realtime private-channel check: `node --env-file=<remote env> scripts/check-realtime.mjs <reportId>`, then edit one entry of that report in `/admin`; it must print `RECEIVED entry`.
 - RLS test (optional, **only with the owner's approval**, since it borrows real auth users inside a rolled-back transaction): `psql "<remote DB URL>" -f supabase/tests/rls_test.sql`; it passes when it fails with `RLS_TESTS_PASSED`. Never run `supabase/tests/local_*.sql` remotely.

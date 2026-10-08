@@ -10,6 +10,7 @@ declare
   v_report uuid;
   v_entry uuid;
   v_new_report uuid;
+  v_draft uuid;
   n int;
 begin
   select coalesce(array_agg(auth_user_id) filter (where auth_user_id is not null), '{}')
@@ -28,9 +29,13 @@ begin
   end if;
 
   insert into cdrrmo.users (email, full_name, role) values ('rls-test-encoder@example.com', 'RLS Test Encoder', 'encoder');
-  insert into cdrrmo.reports (report_at, prepared_by_name) values (now(), 'RLS fixture') returning id into v_report;
+  insert into cdrrmo.reports (report_at, prepared_by_name, status) values (now(), 'RLS fixture', 'published') returning id into v_report;
   insert into cdrrmo.report_entries (report_id, barangay_id, barangay_name, callsign, zone_name, zone_sort, sort_order, monitors_coastal)
     select v_report, b.id, b.name, b.callsign, z.name, z.sort_order, b.sort_order, b.monitors_coastal
+    from cdrrmo.barangays b join cdrrmo.zones z on z.id = b.zone_id;
+  insert into cdrrmo.reports (report_at, prepared_by_name) values (now(), 'RLS draft fixture') returning id into v_draft;
+  insert into cdrrmo.report_entries (report_id, barangay_id, barangay_name, callsign, zone_name, zone_sort, sort_order, monitors_coastal)
+    select v_draft, b.id, b.name, b.callsign, z.name, z.sort_order, b.sort_order, b.monitors_coastal
     from cdrrmo.barangays b join cdrrmo.zones z on z.id = b.zone_id;
   select id into v_entry from cdrrmo.report_entries where report_id = v_report order by sort_order limit 1;
 
@@ -39,6 +44,10 @@ begin
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   select count(*) into n from cdrrmo.report_entries where report_id = v_report;
   if n = 0 then raise exception 'FAIL anon: cannot read report entries'; end if;
+  select count(*) into n from cdrrmo.reports where id = v_draft;
+  if n > 0 then raise exception 'FAIL anon: can read a draft report'; end if;
+  select count(*) into n from cdrrmo.report_entries where report_id = v_draft;
+  if n > 0 then raise exception 'FAIL anon: can read draft entries'; end if;
   select count(*) into n from cdrrmo.barangays;
   if n = 0 then raise exception 'FAIL anon: cannot read barangays'; end if;
   begin
@@ -65,6 +74,8 @@ begin
     'app_metadata', json_build_object('provider', 'google'))::text, true);
   select count(*) into n from cdrrmo.report_entries where report_id = v_report;
   if n = 0 then raise exception 'FAIL outsider: cannot read entries'; end if;
+  select count(*) into n from cdrrmo.report_entries where report_id = v_draft;
+  if n > 0 then raise exception 'FAIL outsider: can read draft entries'; end if;
   select count(*) into n from cdrrmo.users;
   if n > 0 then raise exception 'FAIL outsider: can read users'; end if;
   select count(*) into n from cdrrmo.claim_staff_account();
@@ -126,6 +137,26 @@ begin
   if (select prepared_by_position from cdrrmo.reports where id = v_new_report) <> 'Radio Controller on Duty' then
     raise exception 'FAIL encoder: blank position not defaulted';
   end if;
+  if (select status from cdrrmo.reports where id = v_new_report) <> 'draft' then
+    raise exception 'FAIL encoder: create_report did not start a draft';
+  end if;
+  select count(*) into n from cdrrmo.report_entries where report_id = v_draft;
+  if n = 0 then raise exception 'FAIL encoder: cannot read draft entries'; end if;
+  -- The newest published report is the fixture (now()), so its edited row must be copied over.
+  select count(*) into n from cdrrmo.report_entries e
+    join cdrrmo.report_entries s on s.barangay_id = e.barangay_id and s.id = v_entry
+   where e.report_id = v_new_report and e.responded and e.road = 'passable' and e.remarks = 'encoder';
+  if n <> 1 then raise exception 'FAIL encoder: create_report did not copy the latest published entries'; end if;
+  update cdrrmo.reports set status = 'published' where id = v_new_report;
+  if (select published_at from cdrrmo.reports where id = v_new_report) is null then
+    raise exception 'FAIL encoder: publishing did not stamp published_at';
+  end if;
+  begin
+    update cdrrmo.reports set status = 'draft' where id = v_new_report;
+    raise exception 'FAIL encoder: unpublished a report';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
   select count(*) into n from cdrrmo.users;
   if n <> 1 then raise exception 'FAIL encoder: sees % user rows (expected only own)', n; end if;
   delete from cdrrmo.reports where id = v_report;

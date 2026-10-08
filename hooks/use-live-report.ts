@@ -11,7 +11,8 @@ export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting';
 
 const FLASH_MS = 1500;
 
-export function useLiveReport(initial: ReportBundle) {
+/** staff: listen on the staff-only topic, which also carries draft changes. */
+export function useLiveReport(initial: ReportBundle, { staff = false }: { staff?: boolean } = {}) {
   const [state, dispatch] = useReducer(liveReducer, initial, initLiveState);
   const seenInitial = useRef(initial);
   useEffect(() => {
@@ -55,7 +56,7 @@ export function useLiveReport(initial: ReportBundle) {
   useEffect(() => {
     const supabase = getBrowserClient();
     const channel = supabase
-      .channel(`cdrrmo:report:${reportId}`, { config: { private: true } })
+      .channel(`${staff ? 'cdrrmo-staff' : 'cdrrmo'}:report:${reportId}`, { config: { private: true } })
       .on('broadcast', { event: 'entry' }, ({ payload }) => {
         const entry = parseEntryPayload(payload);
         if (!entry) return; // malformed or future-dated: ignore
@@ -65,8 +66,11 @@ export function useLiveReport(initial: ReportBundle) {
       .on('broadcast', { event: 'report' }, ({ payload }) => {
         const report = parseReportPayload(payload);
         if (report) dispatch({ type: 'report', payload: report });
-      })
-      .subscribe((channelStatus) => {
+      });
+    let removed = false;
+    const subscribe = () => {
+      if (removed) return;
+      channel.subscribe((channelStatus) => {
         if (channelStatus === 'SUBSCRIBED') {
           setStatus('live');
           void resync(); // catch anything that changed between server render and subscribe
@@ -74,6 +78,10 @@ export function useLiveReport(initial: ReportBundle) {
           setStatus('reconnecting');
         }
       });
+    };
+    // The staff topic needs the signed-in user's JWT on the socket, or the join is checked as anon and refused.
+    if (staff) void supabase.realtime.setAuth().then(subscribe, subscribe);
+    else subscribe();
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') void resync();
@@ -86,9 +94,10 @@ export function useLiveReport(initial: ReportBundle) {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('online', onOnline);
       pending.forEach(clearTimeout);
+      removed = true;
       void supabase.removeChannel(channel);
     };
-  }, [reportId, resync, flash]);
+  }, [reportId, staff, resync, flash]);
 
   const applyEntry = useCallback((entry: ReportEntry) => dispatch({ type: 'entry', payload: entry }), []);
   const applyReport = useCallback((report: Report) => dispatch({ type: 'report', payload: report }), []);

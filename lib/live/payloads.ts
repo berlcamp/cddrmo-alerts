@@ -44,6 +44,8 @@ const reportSchema = z.object({
   rivers_summary_override: z.string().nullable(),
   roads_summary_override: z.string().nullable(),
   coastal_summary_override: z.string().nullable(),
+  status: z.enum(['draft', 'published']),
+  published_at: timestamp.nullable(),
   created_at: timestamp,
   updated_at: timestamp,
 });

@@ -44,7 +44,8 @@ export function NewReportDialog({ defaultName, defaultPosition }: { defaultName:
         <DialogHeader>
           <DialogTitle>New netcall report</DialogTitle>
           <DialogDescription>
-            It goes live on the public site immediately, with every barangay set to &ldquo;No response&rdquo;.
+            It starts as a draft pre-filled from the latest published report. Changes save automatically and stay off the
+            public site until you publish.
           </DialogDescription>
         </DialogHeader>
         {open && <NewReportForm defaultName={defaultName} defaultPosition={defaultPosition} />}

@@ -5,9 +5,9 @@ begin
   if exists (select 1 from cdrrmo.reports where report_at = '2026-10-07 10:50+08' and prepared_by_name = 'Romeo P. De Los Angeles Jr') then
     return;
   end if;
-  insert into cdrrmo.reports (report_at, prepared_by_name, prepared_by_position, remarks)
+  insert into cdrrmo.reports (report_at, prepared_by_name, prepared_by_position, remarks, status)
   values ('2026-10-07 10:50+08', 'Romeo P. De Los Angeles Jr', 'Radio Controller on Duty',
-          'All stations reported that their respective AOR are in normal situation.')
+          'All stations reported that their respective AOR are in normal situation.', 'published')
   returning id into v_report;
 
   insert into cdrrmo.report_entries (report_id, barangay_id, barangay_name, callsign, zone_name, zone_sort, sort_order, monitors_coastal)

@@ -48,6 +48,22 @@ export async function updateReport(reportId: string, patch: ReportPatch): Promis
   return ok(data as Report);
 }
 
+export async function publishReport(reportId: string): Promise<ActionResult<Report>> {
+  const staff = await getCurrentStaff();
+  if (!staff) return fail(SESSION_EXPIRED);
+  if (!isUuid(reportId)) return fail('Unknown report.');
+
+  const { data, error } = await cdrrmo(await createClient())
+    .from('reports')
+    .update({ status: 'published', updated_by: staff.id })
+    .eq('id', reportId)
+    .select('*')
+    .maybeSingle();
+  if (error) return fail(`Could not publish: ${error.message}`, true);
+  if (!data) return fail('This report no longer exists.');
+  return ok(data as Report);
+}
+
 export async function addMissingBarangays(reportId: string): Promise<ActionResult<number>> {
   if (!(await getCurrentStaff())) return fail(SESSION_EXPIRED);
   if (!isUuid(reportId)) return fail('Unknown report.');

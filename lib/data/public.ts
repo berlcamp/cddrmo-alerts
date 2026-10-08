@@ -14,7 +14,8 @@ export const ARCHIVE_PAGE_SIZE = 50;
 export const getReportBundle = cache(async (id: string) => {
   await connection();
   if (!isUuid(id)) return null;
-  return fetchReportBundle(getPublicClient(), id);
+  const bundle = await fetchReportBundle(getPublicClient(), id);
+  return bundle?.report.status === 'published' ? bundle : null;
 });
 
 export const getLatestReportMeta = cache(async (): Promise<{ id: string; report_at: string } | null> => {
@@ -22,6 +23,7 @@ export const getLatestReportMeta = cache(async (): Promise<{ id: string; report_
   const { data, error } = await cdrrmo(getPublicClient())
     .from('reports')
     .select('id, report_at')
+    .eq('status', 'published')
     .order('report_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -51,6 +53,7 @@ export async function getArchivePage(page: number): Promise<{ items: { report: R
     cdrrmo(getPublicClient())
       .from('reports')
       .select('*, report_entries(*)')
+      .eq('status', 'published')
       .order('report_at', { ascending: false })
       .range(from, from + ARCHIVE_PAGE_SIZE),
     getReferenceData(),

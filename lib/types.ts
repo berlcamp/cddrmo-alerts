@@ -3,6 +3,7 @@ export type ConditionKind = 'weather' | 'wind';
 export type Road = 'passable' | 'unpassable';
 export type Level = 'normal' | 'above_normal';
 export type Power = 'with_power' | 'no_power';
+export type ReportStatus = 'draft' | 'published';
 
 export interface Zone {
   id: string;
@@ -61,6 +62,8 @@ export interface Report {
   rivers_summary_override: string | null;
   roads_summary_override: string | null;
   coastal_summary_override: string | null;
+  status: ReportStatus;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }

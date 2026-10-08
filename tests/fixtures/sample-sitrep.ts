@@ -92,6 +92,8 @@ export const SAMPLE_REPORT: Report = {
   rivers_summary_override: null,
   roads_summary_override: null,
   coastal_summary_override: null,
+  status: 'published',
+  published_at: '2026-10-07T02:50:00.000Z',
   created_at: '2026-10-07T02:50:00.000Z',
   updated_at: '2026-10-07T02:50:00.000Z',
 };
