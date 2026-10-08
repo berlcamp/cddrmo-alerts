@@ -1,4 +1,4 @@
-import { Bridge, WavesArrowUp, type LucideIcon } from 'lucide-react';
+import { Bridge, WavesArrowUp, ZapOff, type LucideIcon } from 'lucide-react';
 import { LEVEL_LABEL, POWER_LABEL, ROAD_LABEL, valueTone } from '@/lib/labels';
 import type { ConditionLook } from '@/lib/map/conditions';
 import { NONE } from '@/lib/summary';
@@ -54,7 +54,7 @@ export function BarangayTable({ groups, optionLabel, look, flashIds, numbers }: 
                     <td className="px-3 py-2.5">
                       {e.monitors_coastal ? <Status value={e.coastal} text={e.coastal ? LEVEL_LABEL[e.coastal] : NONE} icon={e.coastal === 'above_normal' ? WavesArrowUp : undefined} /> : <span className="text-muted-foreground">n/a</span>}
                     </td>
-                    <td className="px-3 py-2.5"><Status value={e.power} text={e.power ? POWER_LABEL[e.power] : NONE} /></td>
+                    <td className="px-3 py-2.5"><Status value={e.power} text={e.power ? POWER_LABEL[e.power] : NONE} icon={e.power === 'no_power' ? ZapOff : undefined} /></td>
                   </>
                 ) : (
                   <td colSpan={6} className="px-3 py-2.5"><NoResponseLabel /></td>

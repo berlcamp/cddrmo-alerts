@@ -2,19 +2,20 @@
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Bridge, CircleX, WavesArrowUp } from 'lucide-react';
+import { CircleX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { COASTAL_HIGH_SWATCH, NO_RESPONSE_SWATCH, UNPASSABLE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
+import { NO_RESPONSE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
 import { OZAMIZ_BOUNDARY } from '@/lib/map/ozamiz-boundary';
 import type { BarangayLocations, ReportEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ConditionDot, ConditionGlyph } from '../condition-icon';
+import { CoastalHighBadge, NoPowerBadge, UnpassableBadge } from './alert-badges';
 
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const MARKER_SIZE = 32;
-const MARKER_SIZE_NARROW = 24; // phones: the whole city fits at a low zoom, so markers shrink to stay apart
+const MARKER_SIZE = 28;
+const MARKER_SIZE_NARROW = 22; // phones: the whole city fits at a low zoom, so markers shrink to stay apart
 const LABEL_ZOOM = 14;
 
 export interface BarangayMapProps {
@@ -32,7 +33,8 @@ function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; loo
   const fill = entry.responded ? weather ?? { bg: '#e2e8f0', fg: '#475569', border: '#94a3b8' } : NO_RESPONSE_SWATCH;
   const unpassable = entry.responded && entry.road === 'unpassable';
   const coastalHigh = entry.responded && entry.monitors_coastal && entry.coastal === 'above_normal';
-  const hazards = [unpassable && 'road or bridge unpassable', coastalHigh && 'coastal above normal'].filter(Boolean).join(', ');
+  const noPower = entry.responded && entry.power === 'no_power';
+  const hazards = [unpassable && 'road or bridge unpassable', coastalHigh && 'coastal above normal', noPower && 'no power'].filter(Boolean).join(', ');
   const description = entry.responded
     ? `${entry.barangay_name}: ${weather?.label ?? 'no weather reported'}, ${wind?.label ?? 'no wind reported'}${hazards ? `, ${hazards}` : ''}`
     : `${entry.barangay_name}: no response`;
@@ -49,13 +51,14 @@ function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; loo
         )}
         style={{ backgroundColor: fill.bg, color: fill.fg, borderColor: fill.border }}
       >
-        {entry.responded ? <ConditionGlyph look={weather} className="size-[55%]" /> : <CircleX className="size-[55%]" strokeWidth={2.25} aria-hidden />}
+        {entry.responded ? <ConditionGlyph look={weather} className="size-[50%]" /> : <CircleX className="size-[50%]" strokeWidth={2.25} aria-hidden />}
       </span>
       {wind && <ConditionDot look={wind} className="absolute -right-[18%] -bottom-[18%] size-[50%] shadow-sm ring-2 ring-white" />}
-      {(unpassable || coastalHigh) && (
-        <span className="absolute -top-[22%] -left-[22%] flex gap-px">
-          {unpassable && <ConditionDot swatch={UNPASSABLE_SWATCH} icon={<Bridge />} className="size-[16px] shadow-sm ring-2 ring-white" />}
-          {coastalHigh && <ConditionDot swatch={COASTAL_HIGH_SWATCH} icon={<WavesArrowUp />} className="size-[16px] shadow-sm ring-2 ring-white" />}
+      {(unpassable || coastalHigh || noPower) && (
+        <span className="absolute -top-2.5 right-[55%] flex gap-px [&>span]:shadow-sm [&>span]:ring-2 [&>span]:ring-white">
+          {unpassable && <UnpassableBadge />}
+          {coastalHigh && <CoastalHighBadge />}
+          {noPower && <NoPowerBadge />}
         </span>
       )}
       <span

@@ -35,6 +35,7 @@ export const NO_RESPONSE_SWATCH: Swatch = { bg: '#ffffff', fg: '#b91c1c', border
 // Hazard badges on the map: unpassable road or bridge, and coastal water above normal.
 export const UNPASSABLE_SWATCH: Swatch = { bg: '#b91c1c', fg: '#ffffff', border: '#7f1d1d' };
 export const COASTAL_HIGH_SWATCH: Swatch = { bg: '#d97706', fg: '#ffffff', border: '#92400e' };
+export const NO_POWER_SWATCH: Swatch = { bg: '#334155', fg: '#ffffff', border: '#0f172a' };
 
 const SCALES: Record<ConditionKind, Swatch[]> = { weather: WEATHER_SCALE, wind: WIND_SCALE };
 

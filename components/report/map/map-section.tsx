@@ -4,13 +4,14 @@ import { Anchor, Bridge, CloudRain, MapPin, Route, Waves, WavesArrowUp, Wind, X,
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { LEVEL_LABEL, POWER_LABEL, ROAD_LABEL, summaryTone } from '@/lib/labels';
-import { COASTAL_HIGH_SWATCH, NO_RESPONSE_SWATCH, UNPASSABLE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
+import { NO_RESPONSE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
 import { NONE } from '@/lib/summary';
 import type { BarangayLocations, ConditionOption, ReportEntry, ReportSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ConditionDot, ConditionLabel } from '../condition-icon';
 import { NoResponseLabel, StatusItem } from '../entry-parts';
 import { StatusBadge } from '../status-badge';
+import { CoastalHighBadge, NoPowerBadge, UnpassableBadge } from './alert-badges';
 
 // On desktop the map stretches to the height of the summary column beside it.
 const MAP_HEIGHT = 'h-[460px] sm:h-[500px] lg:h-auto lg:min-h-[600px]';
@@ -109,9 +110,10 @@ function Legend({ options, look }: { options: ConditionOption[]; look: (id: stri
       </div>
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Alerts (top-left badge)</h3>
-        <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-          <li className="flex items-center gap-2"><ConditionDot swatch={UNPASSABLE_SWATCH} icon={<Bridge />} />Unpassable road / bridge</li>
-          <li className="flex items-center gap-2"><ConditionDot swatch={COASTAL_HIGH_SWATCH} icon={<WavesArrowUp />} />Coastal above normal</li>
+        <ul className="mt-2 grid gap-y-2 text-sm">
+          <li className="flex items-center gap-2"><UnpassableBadge />Unpassable road / bridge</li>
+          <li className="flex items-center gap-2"><CoastalHighBadge />Coastal above normal</li>
+          <li className="flex items-center gap-2"><NoPowerBadge />No power</li>
         </ul>
       </div>
     </div>
