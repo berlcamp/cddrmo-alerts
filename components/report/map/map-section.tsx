@@ -1,10 +1,10 @@
 'use client';
 
-import { Anchor, CloudRain, MapPin, Route, Waves, Wind, X, Zap, ZapOff } from 'lucide-react';
+import { Anchor, Bridge, CloudRain, MapPin, Route, Waves, WavesArrowUp, Wind, X, Zap, ZapOff } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { LEVEL_LABEL, POWER_LABEL, ROAD_LABEL, summaryTone } from '@/lib/labels';
-import { NO_RESPONSE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
+import { COASTAL_HIGH_SWATCH, NO_RESPONSE_SWATCH, UNPASSABLE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
 import { NONE } from '@/lib/summary';
 import type { BarangayLocations, ConditionOption, ReportEntry, ReportSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -62,9 +62,9 @@ function DetailsPanel({ entry, look, onClose }: { entry: ReportEntry; look: (id:
             <ConditionLabel look={look(entry.wind_option_id)} fallback="No wind reported" />
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-3">
-            <StatusItem label="Road" icon={Route} value={entry.road} text={entry.road ? ROAD_LABEL[entry.road] : NONE} />
+            <StatusItem label="Road" icon={entry.road === 'unpassable' ? Bridge : Route} value={entry.road} text={entry.road ? ROAD_LABEL[entry.road] : NONE} />
             <StatusItem label="River / canal" icon={Waves} value={entry.river} text={entry.river ? LEVEL_LABEL[entry.river] : NONE} />
-            {entry.monitors_coastal && <StatusItem label="Coastal" icon={Anchor} value={entry.coastal} text={entry.coastal ? LEVEL_LABEL[entry.coastal] : NONE} />}
+            {entry.monitors_coastal && <StatusItem label="Coastal" icon={entry.coastal === 'above_normal' ? WavesArrowUp : Anchor} value={entry.coastal} text={entry.coastal ? LEVEL_LABEL[entry.coastal] : NONE} />}
             <StatusItem label="Power" icon={entry.power === 'no_power' ? ZapOff : Zap} value={entry.power} text={entry.power ? POWER_LABEL[entry.power] : NONE} />
           </dl>
         </>
@@ -105,6 +105,13 @@ function Legend({ options, look }: { options: ConditionOption[]; look: (id: stri
           {wind.map((o) => (
             <li key={o.id} className="flex items-center gap-2"><ConditionDot look={look(o.id)} />{o.label}</li>
           ))}
+        </ul>
+      </div>
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Alerts (top-left badge)</h3>
+        <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+          <li className="flex items-center gap-2"><ConditionDot swatch={UNPASSABLE_SWATCH} icon={<Bridge />} />Unpassable road / bridge</li>
+          <li className="flex items-center gap-2"><ConditionDot swatch={COASTAL_HIGH_SWATCH} icon={<WavesArrowUp />} />Coastal above normal</li>
         </ul>
       </div>
     </div>

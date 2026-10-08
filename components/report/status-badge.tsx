@@ -14,8 +14,8 @@ const TONE_ICON: Record<Tone, LucideIcon> = { ok: CircleCheck, warn: TriangleAle
 export function StatusBadge({ tone, label, icon }: { tone: Tone; label: string; icon?: LucideIcon }) {
   const Icon = icon ?? TONE_ICON[tone];
   return (
-    <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold', TONE_CLASS[tone])}>
-      <Icon className="size-4 shrink-0" aria-hidden />
+    <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-sm font-bold', TONE_CLASS[tone])}>
+      <Icon className="size-3.5 shrink-0" aria-hidden />
       {label}
     </span>
   );

@@ -1,4 +1,4 @@
-import { Anchor, Route, Waves, Zap, ZapOff } from 'lucide-react';
+import { Anchor, Bridge, Route, Waves, WavesArrowUp, Zap, ZapOff } from 'lucide-react';
 import { LEVEL_LABEL, POWER_LABEL, ROAD_LABEL } from '@/lib/labels';
 import type { ConditionLook } from '@/lib/map/conditions';
 import { NONE } from '@/lib/summary';
@@ -35,10 +35,10 @@ function BarangayCard({ entry, optionLabel, look, flash }: { entry: ReportEntry;
         <ConditionLabel look={look(entry.wind_option_id)} fallback={optionLabel(entry.wind_option_id)} />
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3">
-        <StatusItem label="Road" icon={Route} value={entry.road} text={entry.road ? ROAD_LABEL[entry.road] : NONE} />
+        <StatusItem label="Road" icon={entry.road === 'unpassable' ? Bridge : Route} value={entry.road} text={entry.road ? ROAD_LABEL[entry.road] : NONE} />
         <StatusItem label="River / canal" icon={Waves} value={entry.river} text={entry.river ? LEVEL_LABEL[entry.river] : NONE} />
         {entry.monitors_coastal && (
-          <StatusItem label="Coastal" icon={Anchor} value={entry.coastal} text={entry.coastal ? LEVEL_LABEL[entry.coastal] : NONE} />
+          <StatusItem label="Coastal" icon={entry.coastal === 'above_normal' ? WavesArrowUp : Anchor} value={entry.coastal} text={entry.coastal ? LEVEL_LABEL[entry.coastal] : NONE} />
         )}
         <StatusItem
           label="Power"

@@ -2,10 +2,10 @@
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { CircleX } from 'lucide-react';
+import { Bridge, CircleX, WavesArrowUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NO_RESPONSE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
+import { COASTAL_HIGH_SWATCH, NO_RESPONSE_SWATCH, UNPASSABLE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
 import { OZAMIZ_BOUNDARY } from '@/lib/map/ozamiz-boundary';
 import type { BarangayLocations, ReportEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -13,8 +13,8 @@ import { ConditionDot, ConditionGlyph } from '../condition-icon';
 
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const MARKER_SIZE = 40;
-const MARKER_SIZE_NARROW = 28; // phones: the whole city fits at a low zoom, so markers shrink to stay apart
+const MARKER_SIZE = 32;
+const MARKER_SIZE_NARROW = 24; // phones: the whole city fits at a low zoom, so markers shrink to stay apart
 const LABEL_ZOOM = 14;
 
 export interface BarangayMapProps {
@@ -30,8 +30,11 @@ function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; loo
   const weather = entry.responded ? look(entry.weather_option_id) : null;
   const wind = entry.responded ? look(entry.wind_option_id) : null;
   const fill = entry.responded ? weather ?? { bg: '#e2e8f0', fg: '#475569', border: '#94a3b8' } : NO_RESPONSE_SWATCH;
+  const unpassable = entry.responded && entry.road === 'unpassable';
+  const coastalHigh = entry.responded && entry.monitors_coastal && entry.coastal === 'above_normal';
+  const hazards = [unpassable && 'road or bridge unpassable', coastalHigh && 'coastal above normal'].filter(Boolean).join(', ');
   const description = entry.responded
-    ? `${entry.barangay_name}: ${weather?.label ?? 'no weather reported'}, ${wind?.label ?? 'no wind reported'}`
+    ? `${entry.barangay_name}: ${weather?.label ?? 'no weather reported'}, ${wind?.label ?? 'no wind reported'}${hazards ? `, ${hazards}` : ''}`
     : `${entry.barangay_name}: no response`;
   return (
     <span className="relative block size-full">
@@ -49,6 +52,12 @@ function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; loo
         {entry.responded ? <ConditionGlyph look={weather} className="size-[55%]" /> : <CircleX className="size-[55%]" strokeWidth={2.25} aria-hidden />}
       </span>
       {wind && <ConditionDot look={wind} className="absolute -right-[18%] -bottom-[18%] size-[50%] shadow-sm ring-2 ring-white" />}
+      {(unpassable || coastalHigh) && (
+        <span className="absolute -top-[22%] -left-[22%] flex gap-px">
+          {unpassable && <ConditionDot swatch={UNPASSABLE_SWATCH} icon={<Bridge />} className="size-[16px] shadow-sm ring-2 ring-white" />}
+          {coastalHigh && <ConditionDot swatch={COASTAL_HIGH_SWATCH} icon={<WavesArrowUp />} className="size-[16px] shadow-sm ring-2 ring-white" />}
+        </span>
+      )}
       <span
         aria-hidden
         className="pointer-events-none absolute top-full left-1/2 mt-1.5 hidden -translate-x-1/2 rounded bg-white/90 px-1.5 text-xs font-bold whitespace-nowrap text-slate-900 shadow-sm [.show-labels_&]:block"

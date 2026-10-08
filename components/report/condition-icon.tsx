@@ -30,7 +30,7 @@ export function ConditionDot({ look, swatch, icon, className }: { look?: Conditi
   return (
     <span
       aria-hidden
-      className={cn('inline-flex size-6 shrink-0 items-center justify-center rounded-full border [&>svg]:size-[60%]', className)}
+      className={cn('inline-flex size-5 shrink-0 items-center justify-center rounded-full border [&>svg]:size-[62%]', className)}
       style={{ backgroundColor: colors.bg, color: colors.fg, borderColor: colors.border }}
     >
       {icon ?? <ConditionGlyph look={look ?? null} />}
