@@ -29,10 +29,9 @@ const NO_OVERRIDES: SummaryOverrides = {
   coastal_summary_override: null,
 };
 
-export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
+export function EncoderView({ initial, options, shareUrl }: {
   initial: ReportBundle;
   options: ConditionOption[];
-  isSuperAdmin: boolean;
   shareUrl: string;
 }) {
   const live = useLiveReport(initial, { staff: true });
@@ -117,7 +116,7 @@ export function EncoderView({ initial, options, isSuperAdmin, shareUrl }: {
       <MissingBarangaysButton reportId={live.report.id} />
       <ReportRemarks report={live.report} computed={computed} save={reportSaver.save} status={reportSaver.status} />
       {live.report.status === 'published' && <SharePanel url={shareUrl} title={`Barangay Weather SitRep – ${formatShortHeading(live.report.report_at)}`} />}
-      {isSuperAdmin && <DeleteReportDialog reportId={live.report.id} reportAt={live.report.report_at} />}
+      <DeleteReportDialog reportId={live.report.id} reportAt={live.report.report_at} />
     </div>
   );
 }

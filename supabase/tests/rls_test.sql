@@ -159,12 +159,15 @@ begin
   end;
   select count(*) into n from cdrrmo.users;
   if n <> 1 then raise exception 'FAIL encoder: sees % user rows (expected only own)', n; end if;
-  delete from cdrrmo.reports where id = v_report;
+  delete from cdrrmo.reports where id = v_draft;
   get diagnostics n = row_count;
-  if n > 0 then raise exception 'FAIL encoder: deleted a report'; end if;
+  if n <> 1 then raise exception 'FAIL encoder: could not delete a report'; end if;
   update cdrrmo.barangays set callsign = callsign;
   get diagnostics n = row_count;
-  if n > 0 then raise exception 'FAIL encoder: updated barangays'; end if;
+  if n = 0 then raise exception 'FAIL encoder: could not update barangays'; end if;
+  update cdrrmo.settings set call_sign = call_sign;
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'FAIL encoder: could not update settings'; end if;
   begin
     insert into cdrrmo.users (email, role) values ('x@example.com', 'encoder');
     raise exception 'FAIL encoder: added a user';

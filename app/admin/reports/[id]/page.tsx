@@ -12,9 +12,9 @@ export const metadata: Metadata = { title: 'Encode report' };
 
 export default async function EncodeReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const staff = await requireStaff();
+  await requireStaff();
   if (!isUuid(id)) notFound();
   const [bundle, { options }] = await Promise.all([fetchReportBundle(await createClient(), id), getReferenceData()]);
   if (!bundle) notFound();
-  return <EncoderView initial={bundle} options={options} isSuperAdmin={staff.role === 'super_admin'} shareUrl={reportUrl(id)} />;
+  return <EncoderView initial={bundle} options={options} shareUrl={reportUrl(id)} />;
 }

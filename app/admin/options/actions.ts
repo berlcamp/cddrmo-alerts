@@ -2,17 +2,17 @@
 
 import { revalidatePath } from 'next/cache';
 import { fail, ok, type ActionResult } from '@/lib/action-result';
-import { getSuperAdminForAction } from '@/lib/auth';
+import { getCurrentStaff } from '@/lib/auth';
 import { isUuid } from '@/lib/ids';
 import { moveWithinGroup } from '@/lib/reorder';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
 import { optionSchema } from '@/lib/validation';
 
-const NOT_ALLOWED = 'Only the super admin can manage options.';
+const NOT_ALLOWED = 'Your session has expired. Sign in again.';
 
 export async function saveOption(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const parsed = optionSchema.safeParse({
     kind: formData.get('kind'),
     label: formData.get('label'),
@@ -36,7 +36,7 @@ export async function saveOption(_prev: ActionResult | null, formData: FormData)
 }
 
 export async function moveOption(id: string, direction: 'up' | 'down'): Promise<ActionResult> {
-  if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const db = cdrrmo(await createClient());
   const { data, error } = await db.from('condition_options').select('id, kind, sort_order');
   if (error) return fail(error.message, true);

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { requireSuperAdmin } from '@/lib/auth';
+import { requireStaff } from '@/lib/auth';
 import { listOptions } from '@/lib/data/admin';
 import { OptionsManager } from './options-manager';
 
 export const metadata: Metadata = { title: 'Options' };
 
 export default async function OptionsPage() {
-  await requireSuperAdmin();
+  await requireStaff();
   return <OptionsManager options={await listOptions()} />;
 }

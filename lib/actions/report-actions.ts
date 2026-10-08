@@ -73,8 +73,7 @@ export async function addMissingBarangays(reportId: string): Promise<ActionResul
 }
 
 export async function deleteReport(reportId: string, confirmation: string): Promise<ActionResult> {
-  const staff = await getCurrentStaff();
-  if (!staff || staff.role !== 'super_admin') return fail('Only the super admin can delete reports.');
+  if (!(await getCurrentStaff())) return fail(SESSION_EXPIRED);
   if (!isUuid(reportId)) return fail('Unknown report.');
   const db = cdrrmo(await createClient());
   const { data: report } = await db.from('reports').select('report_at').eq('id', reportId).maybeSingle();

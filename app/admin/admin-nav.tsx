@@ -6,9 +6,9 @@ import { cn } from '@/lib/utils';
 
 const ITEMS = [
   { href: '/admin/reports', label: 'Reports', superOnly: false },
-  { href: '/admin/barangays', label: 'Barangays', superOnly: true },
-  { href: '/admin/options', label: 'Options', superOnly: true },
-  { href: '/admin/settings', label: 'Settings', superOnly: true },
+  { href: '/admin/barangays', label: 'Barangays', superOnly: false },
+  { href: '/admin/options', label: 'Options', superOnly: false },
+  { href: '/admin/settings', label: 'Settings', superOnly: false },
   { href: '/admin/users', label: 'Users', superOnly: true },
 ];
 

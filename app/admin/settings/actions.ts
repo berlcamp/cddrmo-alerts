@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { fail, ok, type ActionResult } from '@/lib/action-result';
-import { getSuperAdminForAction } from '@/lib/auth';
+import { getCurrentStaff } from '@/lib/auth';
 import { getSettings } from '@/lib/data/admin';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
 import { settingsSchema } from '@/lib/validation';
 
-const NOT_ALLOWED = 'Only the super admin can change settings.';
+const NOT_ALLOWED = 'Your session has expired. Sign in again.';
 const BUCKET = 'cdrrmo-assets';
 const PUBLIC_MARKER = `/storage/v1/object/public/${BUCKET}/`;
 const EXTENSIONS: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
@@ -27,7 +27,7 @@ async function loadSettings() {
 }
 
 export async function saveSettings(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const parsed = settingsSchema.safeParse({
     office_title: formData.get('office_title'),
     office_lines: String(formData.get('office_lines') ?? '').split('\n').map((line) => line.trim()).filter(Boolean),
@@ -44,7 +44,7 @@ export async function saveSettings(_prev: ActionResult | null, formData: FormDat
 }
 
 export async function uploadLogo(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const file = formData.get('logo');
   if (!(file instanceof File) || file.size === 0) return fail('Choose an image file.');
   const ext = EXTENSIONS[file.type];
@@ -66,7 +66,7 @@ export async function uploadLogo(_prev: ActionResult | null, formData: FormData)
 }
 
 export async function removeLogo(url: string): Promise<ActionResult> {
-  if (!(await getSuperAdminForAction())) return fail(NOT_ALLOWED);
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const settings = await loadSettings();
   if (!settings) return fail(LOAD_FAILED, true);
   if (!settings.logo_urls.includes(url)) return fail('Logo not found.');

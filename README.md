@@ -1,6 +1,6 @@
 # CDRRMO Barangay Weather SitRep
 
-Live barangay weather situation reports for the Ozamiz City CDRRMO netcall. Radio controllers encode each barangay during the netcall, and every change appears on the public site immediately.
+Live barangay weather situation reports for the Ozamiz City CDRRMO netcall. Radio controllers encode each barangay during the netcall, and once a report is published every change appears on the public site immediately.
 
 - Public: `/` (current report), `/reports` (archive), `/reports/<id>` (shareable, with a Facebook preview)
 - Staff: `/admin` (Google sign-in; allowlisted accounts only)
@@ -28,12 +28,12 @@ Everything can run against a local Supabase stack (Docker required). This projec
 - Authentication → URL Configuration → **Redirect URLs**: add `http://localhost:3000/auth/callback` and `https://<production-domain>/auth/callback`.
 - Authentication → Providers: enable **Google**.
 - Realtime: the app uses **private** Broadcast channels (`cdrrmo:*`) with a read-only `realtime.messages` policy (`0005`), so public channel access is not required by this app. Leave that project setting as it is for the other apps on the shared project.
-- Migrations are in `supabase/migrations`. `0001` is already applied to the shared project; apply `0002`–`0007` by hand as described below.
+- Migrations are in `supabase/migrations`. `0001` is already applied to the shared project; apply `0002`–`0008` by hand as described below.
 
 ## Deploying the database to the shared Asenso project
 Only with the owner's approval. **Never run `supabase db push` or `supabase migration repair` against the shared project.** `0001` was applied through the dashboard with a timestamp version, and the project's `supabase_migrations.schema_migrations` also holds other apps' versions, so `supabase link` + `db push` would try to re-run `0001` or demand a repair that rewrites another app's history.
 
-Apply the files **by hand, one at a time, in order** — `0002_auth_rls.sql`, `0003_realtime.sql`, `0004_storage.sql`, `0005_private_realtime.sql`, `0006_claim_hardening.sql`, `0007_drafts.sql` — with `psql "<remote DB URL>" -v ON_ERROR_STOP=1 -f <file>` or by pasting each file into the SQL editor. Stop at the first error.
+Apply the files **by hand, one at a time, in order** — `0002_auth_rls.sql`, `0003_realtime.sql`, `0004_storage.sql`, `0005_private_realtime.sql`, `0006_claim_hardening.sql`, `0007_drafts.sql`, `0008_staff_manage.sql` — with `psql "<remote DB URL>" -v ON_ERROR_STOP=1 -f <file>` or by pasting each file into the SQL editor. Stop at the first error.
 
 **Pre-checks** (run first; stop if either is wrong):
 ```sql
@@ -62,8 +62,8 @@ Then expose the `cdrrmo` schema, set the redirect URLs and enable the Google pro
 Import the repo and set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_SITE_URL` (the production URL, which is used in share links and Facebook previews). Add the production callback URL in Supabase (see above).
 
 ## Roles
-- **Super admin** (berlcamp@gmail.com, fixed): manages users, barangays, options, header settings; can delete reports.
-- **Encoder**: creates and edits reports. Every edit is public immediately.
+- **Super admin** (berlcamp@gmail.com, fixed): everything an encoder can do, plus managing users.
+- **Encoder**: creates, edits, publishes and deletes reports; manages barangays, options and header settings. Reports reach the public site only when published.
 
 ## Tests
 - `npm test`: unit tests (summary rules, formatting, live reducer, validation)
@@ -75,7 +75,7 @@ Import the repo and set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 ## Manual acceptance checklist (needs Google sign-in)
 1. Sign in as super admin and land on `/admin/reports`.
 2. An unlisted Google account is sent to `/unauthorized`.
-3. Start a new report. An open public tab shows the "new netcall report" banner.
+3. Start a new report: it opens as a pre-filled draft. Publish it, and an open public tab shows the "new netcall report" banner.
 4. Change a barangay's wind on a phone. The public page on another device updates within about 1 second.
 5. Go offline, change a field, and see "Not saved". Back online, it saves automatically.
-6. The super admin deletes a test report by typing its time.
+6. Staff delete a test report by typing its time.
