@@ -2,7 +2,7 @@
 
 import { ImageDown } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { LiveIndicator } from '@/components/report/live-indicator';
 import { buttonVariants } from '@/components/ui/button';
 import { useEntrySaver } from '@/hooks/use-entry-saver';
@@ -12,7 +12,6 @@ import { updateEntry } from '@/lib/actions/report-actions';
 import { cn } from '@/lib/utils';
 import { applyPatch } from '@/lib/encoder-patches';
 import { formatShortHeading } from '@/lib/format';
-import { makeOptionLabeler } from '@/lib/labels';
 import { summarizeReport, type SummaryOverrides } from '@/lib/summary';
 import type { ConditionOption, ReportBundle } from '@/lib/types';
 import { DeleteReportDialog } from './delete-report-dialog';
@@ -20,7 +19,7 @@ import { MissingBarangaysButton } from './missing-barangays-button';
 import { PublishBar } from './publish-bar';
 import { ReportDetails } from './report-details';
 import { ReportRemarks } from './report-remarks';
-import { RollCallList } from './roll-call-list';
+import { RollCallTable } from './roll-call-table';
 import { SharePanel } from './share-panel';
 import { SummaryStrip } from './summary-strip';
 
@@ -40,13 +39,10 @@ export function EncoderView({ initial, options, shareUrl }: {
   const live = useLiveReport(initial, { staff: true });
   const saver = useEntrySaver(updateEntry, live.applyEntry);
   const reportSaver = useReportSaver(live.report.id, live.applyReport);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [focusId, setFocusId] = useState<string | null>(null);
 
   const entries = useMemo(() => live.entries.map((e) => applyPatch(e, saver.pending[e.id])), [live.entries, saver.pending]);
   const summary = useMemo(() => summarizeReport(live.report, entries, options), [live.report, entries, options]);
   const computed = useMemo(() => summarizeReport(NO_OVERRIDES, entries, options), [entries, options]);
-  const optionLabel = useMemo(() => makeOptionLabeler(options), [options]);
   const weatherOptions = useMemo(() => options.filter((o) => o.kind === 'weather' && o.is_active), [options]);
   const windOptions = useMemo(() => options.filter((o) => o.kind === 'wind' && o.is_active), [options]);
 
@@ -82,13 +78,6 @@ export function EncoderView({ initial, options, shareUrl }: {
     );
   }
 
-  function openNext(id: string) {
-    const index = entries.findIndex((e) => e.id === id);
-    const nextId = entries[index + 1]?.id ?? null;
-    setOpenId(nextId);
-    setFocusId(nextId);
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -111,23 +100,15 @@ export function EncoderView({ initial, options, shareUrl }: {
       {live.report.status === 'draft' && <PublishBar reportId={live.report.id} hasUnsaved={hasUnsaved} onPublished={live.applyReport} />}
       <ReportDetails report={live.report} save={reportSaver.save} status={reportSaver.status} onRetry={reportSaver.retry} />
       <SummaryStrip summary={summary} />
-      <RollCallList
+      <RollCallTable
         entries={entries}
-        openId={openId}
-        focusId={focusId}
-        onToggle={(id) => {
-          setFocusId(null);
-          setOpenId((current) => (current === id ? null : id));
-        }}
         states={saver.states}
-        optionLabel={optionLabel}
         flashIds={live.flashIds}
         weatherOptions={weatherOptions}
         windOptions={windOptions}
         onPatch={saver.update}
         onRetry={saver.retry}
         onDiscard={saver.discard}
-        onNext={openNext}
       />
       <MissingBarangaysButton reportId={live.report.id} />
       <ReportRemarks report={live.report} computed={computed} save={reportSaver.save} status={reportSaver.status} />
