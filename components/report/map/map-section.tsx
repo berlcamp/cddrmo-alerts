@@ -40,7 +40,7 @@ function DetailsPanel({ entry, look, onClose }: { entry: ReportEntry; look: (id:
       role="dialog"
       aria-modal="false"
       aria-labelledby="map-details-heading"
-      className="absolute inset-x-2 bottom-2 z-[1000] max-h-[75%] overflow-y-auto rounded-xl border bg-card p-4 shadow-xl sm:inset-x-auto sm:left-3 sm:bottom-3 sm:w-80"
+      className="w-72 max-w-[calc(100vw-3rem)] rounded-xl border bg-card p-4 shadow-xl"
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -145,8 +145,15 @@ export function MapSection({ entries, locations, options, look, summary, selecte
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className={cn('relative isolate', MAP_HEIGHT)}>
-          <BarangayMap entries={entries} locations={locations} look={look} selectedId={selectedId} flashIds={flashIds} onSelect={onSelect} />
-          {selected && <DetailsPanel entry={selected} look={look} onClose={() => onSelect(null)} />}
+          <BarangayMap
+            entries={entries}
+            locations={locations}
+            look={look}
+            selectedId={selectedId}
+            flashIds={flashIds}
+            onSelect={onSelect}
+            details={selected && <DetailsPanel entry={selected} look={look} onClose={() => onSelect(null)} />}
+          />
         </div>
         <aside aria-label="Summary and legend" className="space-y-5 border-t p-4 lg:border-t-0 lg:border-l">
           <div>

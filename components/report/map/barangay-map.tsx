@@ -3,7 +3,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CircleX } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { NO_RESPONSE_SWATCH, type ConditionLook } from '@/lib/map/conditions';
 import { OZAMIZ_BOUNDARY } from '@/lib/map/ozamiz-boundary';
@@ -17,6 +17,7 @@ const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">Op
 const MARKER_SIZE = 28;
 const MARKER_SIZE_NARROW = 22; // phones: the whole city fits at a low zoom, so markers shrink to stay apart
 const LABEL_ZOOM = 14;
+const EDGE_GAP = 8; // keep the details card this far inside the map edges
 
 export interface BarangayMapProps {
   entries: ReportEntry[];
@@ -25,6 +26,8 @@ export interface BarangayMapProps {
   selectedId: string | null;
   flashIds: ReadonlySet<string>;
   onSelect: (id: string | null) => void;
+  /** Details card for the selected barangay, shown directly below its marker. */
+  details: ReactNode;
 }
 
 function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; look: BarangayMapProps['look']; selected: boolean; flash: boolean }) {
@@ -71,13 +74,16 @@ function MarkerBadge({ entry, look, selected, flash }: { entry: ReportEntry; loo
   );
 }
 
-export default function BarangayMap({ entries, locations, look, selectedId, flashIds, onSelect }: BarangayMapProps) {
+export default function BarangayMap({ entries, locations, look, selectedId, flashIds, onSelect, details }: BarangayMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef(new Map<string, L.Marker>());
   const fittedRef = useRef(false);
   const onSelectRef = useRef(onSelect);
   const [slots, setSlots] = useState<ReadonlyMap<string, HTMLElement>>(() => new Map());
+  const [anchor, setAnchor] = useState<{ id: string; x: number; y: number; size: number } | null>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const pannedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -172,14 +178,59 @@ export default function BarangayMap({ entries, locations, look, selectedId, flas
     for (const [id, marker] of markersRef.current) marker.setZIndexOffset(id === selectedId ? 1000 : 0);
   }, [selectedId, slots]);
 
+  // Track the selected marker's on-screen position so the details card stays pinned under it while the map moves.
+  useEffect(() => {
+    const map = mapRef.current;
+    const marker = selectedId ? markersRef.current.get(selectedId) : undefined;
+    if (!map || !selectedId || !marker) {
+      setAnchor(null);
+      pannedForRef.current = null;
+      return;
+    }
+    const size = (marker.options.icon as L.DivIcon | undefined)?.options.iconSize as [number, number] | undefined;
+    const update = () => {
+      const point = map.latLngToContainerPoint(marker.getLatLng());
+      setAnchor({ id: selectedId, x: point.x, y: point.y, size: size?.[1] ?? MARKER_SIZE });
+    };
+    update();
+    map.on('move zoom viewreset resize', update);
+    return () => {
+      map.off('move zoom viewreset resize', update);
+    };
+  }, [selectedId, slots]);
+
+  // Once per selection, pan just enough that the whole card is visible inside the map.
+  useLayoutEffect(() => {
+    const map = mapRef.current;
+    const card = detailsRef.current;
+    if (!map || !card || !anchor || pannedForRef.current === anchor.id) return;
+    pannedForRef.current = anchor.id;
+    const box = map.getContainer().getBoundingClientRect();
+    const rect = card.getBoundingClientRect();
+    const dx = rect.left < box.left + EDGE_GAP ? rect.left - box.left - EDGE_GAP : rect.right > box.right - EDGE_GAP ? rect.right - box.right + EDGE_GAP : 0;
+    const dy = rect.bottom > box.bottom - EDGE_GAP ? Math.min(rect.bottom - box.bottom + EDGE_GAP, rect.top - box.top - EDGE_GAP) : 0;
+    if (dx || dy) map.panBy([dx, dy]);
+  }, [anchor]);
+
   return (
-    <>
+    <div className="relative size-full">
       <div
         ref={containerRef}
         role="region"
         aria-label="Map of Ozamiz City barangays. The same information is in the table below."
         className="size-full bg-[#f2f1ed]"
       />
+      {anchor && anchor.id === selectedId && details && (
+        <div
+          ref={detailsRef}
+          className="absolute z-[1000] -translate-x-1/2 pt-2"
+          style={{ left: anchor.x, top: anchor.y + anchor.size / 2 + 6 }}
+        >
+          {/* arrow pointing up at the marker */}
+          <span aria-hidden className="absolute top-[3px] left-1/2 z-10 size-3 -translate-x-1/2 rotate-45 border-t border-l bg-card" />
+          {details}
+        </div>
+      )}
       {entries.map((entry) => {
         const slot = slots.get(entry.id);
         return slot
@@ -190,6 +241,6 @@ export default function BarangayMap({ entries, locations, look, selectedId, flas
             )
           : null;
       })}
-    </>
+    </div>
   );
 }
