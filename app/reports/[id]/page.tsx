@@ -23,6 +23,7 @@ export default async function ReportPage({ params }: Props) {
       initial={bundle}
       options={reference.options}
       settings={reference.settings}
+      locations={reference.locations}
       isLatest={latest?.id === id}
       shareUrl={reportUrl(id)}
     />

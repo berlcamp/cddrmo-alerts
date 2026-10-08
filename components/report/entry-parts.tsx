@@ -3,15 +3,6 @@ import { valueTone } from '@/lib/labels';
 import type { Level, Power, Road } from '@/lib/types';
 import { StatusBadge } from './status-badge';
 
-export function ConditionChip({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-bold">
-      <Icon className="size-4 shrink-0" aria-hidden />
-      {label}
-    </span>
-  );
-}
-
 export function StatusItem({ label, icon, value, text }: { label: string; icon?: LucideIcon; value: Road | Level | Power | null; text: string }) {
   return (
     <div className="flex flex-col gap-1">

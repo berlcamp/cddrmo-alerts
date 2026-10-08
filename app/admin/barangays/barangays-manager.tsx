@@ -21,7 +21,7 @@ function BarangayForm({ zones, barangay }: { zones: Zone[]; barangay?: Barangay 
     return result;
   }, null);
   return (
-    <form action={formAction} className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1.3fr_1.3fr_auto_auto_auto] lg:items-end">
+    <form action={formAction} className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1.3fr_1.3fr_1fr_1fr_auto_auto_auto] lg:items-end">
       {barangay && <input type="hidden" name="id" value={barangay.id} />}
       <FormField label="Name" htmlFor={`name-${key}`}>
         <Input id={`name-${key}`} name="name" defaultValue={barangay?.name} required className="h-11" />
@@ -34,6 +34,12 @@ function BarangayForm({ zones, barangay }: { zones: Zone[]; barangay?: Barangay 
           {zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
         </select>
       </FormField>
+      <FormField label="Latitude" htmlFor={`lat-${key}`}>
+        <Input id={`lat-${key}`} name="latitude" inputMode="decimal" defaultValue={barangay?.latitude ?? ''} placeholder="8.15" className="h-11" />
+      </FormField>
+      <FormField label="Longitude" htmlFor={`lng-${key}`}>
+        <Input id={`lng-${key}`} name="longitude" inputMode="decimal" defaultValue={barangay?.longitude ?? ''} placeholder="123.80" className="h-11" />
+      </FormField>
       <label className={CHECK}>
         <input type="checkbox" name="monitors_coastal" defaultChecked={barangay?.monitors_coastal ?? false} className="size-5 accent-primary" /> Coastal
       </label>
@@ -41,7 +47,7 @@ function BarangayForm({ zones, barangay }: { zones: Zone[]; barangay?: Barangay 
         <input type="checkbox" name="is_active" defaultChecked={barangay?.is_active ?? true} className="size-5 accent-primary" /> Active
       </label>
       <Button type="submit" disabled={pending} className="h-11 cursor-pointer">{pending ? 'Saving…' : barangay ? 'Save' : 'Add'}</Button>
-      {state && !state.ok && <p role="alert" className="text-sm font-bold text-danger sm:col-span-2 lg:col-span-6">{state.message}</p>}
+      {state && !state.ok && <p role="alert" className="text-sm font-bold text-danger sm:col-span-2 lg:col-span-8">{state.message}</p>}
     </form>
   );
 }
@@ -77,7 +83,7 @@ export function BarangaysManager({ zones, barangays }: { zones: Zone[]; barangay
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Barangays</h1>
-        <p className="text-muted-foreground">Changes apply to new reports. Existing reports keep the names and callsigns they were created with. Use the arrows to set the roll-call order.</p>
+        <p className="text-muted-foreground">Changes apply to new reports. Existing reports keep the names and callsigns they were created with. Use the arrows to set the roll-call order. Latitude and longitude place the barangay on the public map (right-click a spot in Google Maps to copy them).</p>
       </div>
       {zones.map((zone) => {
         const rows = barangays.filter((b) => b.zone_id === zone.id).sort((a, b) => a.sort_order - b.sort_order);

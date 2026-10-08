@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 :root {
+  color-scheme: light; /* the site is light-only */
   --radius: 0.625rem;
   --background: #f8fafc;
   --foreground: #020617;
@@ -30,38 +31,6 @@
   --danger: #b91c1c;
   --danger-soft: #fee2e2;
   --on-status: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f1f5f9;
-    --card: #0f172a;
-    --card-foreground: #f1f5f9;
-    --popover: #0f172a;
-    --popover-foreground: #f1f5f9;
-    --primary: #38bdf8;
-    --primary-foreground: #082f49;
-    --secondary: #1e293b;
-    --secondary-foreground: #f1f5f9;
-    --muted: #1e293b;
-    --muted-foreground: #cbd5e1;
-    --accent: #1e293b;
-    --accent-foreground: #f1f5f9;
-    --destructive: #f87171;
-    --border: #1e293b;
-    --input: #334155;
-    --ring: #38bdf8;
-    --brand: #0b1220;
-    --brand-foreground: #f8fafc;
-    --ok: #4ade80;
-    --ok-soft: #052e16;
-    --warn: #fbbf24;
-    --warn-soft: #451a03;
-    --danger: #f87171;
-    --danger-soft: #450a0a;
-    --on-status: #020617;
-  }
 }
 
 @theme inline {
@@ -112,3 +81,11 @@
   :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
   .tabular { font-variant-numeric: tabular-nums; }
 }
+
+/* Leaflet map: our markers draw their own badge, so drop Leaflet's default icon box. */
+.barangay-marker { background: none; border: 0; }
+.barangay-marker:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 9999px; }
+.leaflet-container { font-family: inherit; }
+/* Mute the basemap so the condition markers carry the colour. */
+.leaflet-tile-pane { filter: saturate(0.4) brightness(1.04); }
+.leaflet-control-attribution { font-size: 11px; }

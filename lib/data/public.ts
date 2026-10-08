@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from '@/lib/settings-defaults';
 import { summarizeReport } from '@/lib/summary';
 import { cdrrmo } from '@/lib/supabase/db';
 import { getPublicClient } from '@/lib/supabase/public';
-import type { ConditionOption, Report, ReportEntry, ReportSummary, Settings } from '@/lib/types';
+import type { BarangayLocations, ConditionOption, Report, ReportEntry, ReportSummary, Settings } from '@/lib/types';
 
 export const ARCHIVE_PAGE_SIZE = 50;
 
@@ -31,18 +31,22 @@ export const getLatestReportMeta = cache(async (): Promise<{ id: string; report_
   return data as { id: string; report_at: string } | null;
 });
 
-export const getReferenceData = cache(async (): Promise<{ options: ConditionOption[]; settings: Settings }> => {
+export const getReferenceData = cache(async (): Promise<{ options: ConditionOption[]; settings: Settings; locations: BarangayLocations }> => {
   await connection();
   const db = cdrrmo(getPublicClient());
-  const [optionsRes, settingsRes] = await Promise.all([
+  const [optionsRes, settingsRes, barangaysRes] = await Promise.all([
     db.from('condition_options').select('*').order('kind').order('sort_order'),
     db.from('settings').select('*').eq('id', 1).maybeSingle(),
+    db.from('barangays').select('id, latitude, longitude').not('latitude', 'is', null),
   ]);
   if (optionsRes.error) throw new Error(`Could not load options: ${optionsRes.error.message}`);
   if (settingsRes.error) throw new Error(`Could not load settings: ${settingsRes.error.message}`);
+  // Map positions are optional: without them the map is empty but the report still renders.
+  const rows = barangaysRes.error ? [] : ((barangaysRes.data ?? []) as { id: string; latitude: number; longitude: number }[]);
   return {
     options: (optionsRes.data ?? []) as ConditionOption[],
     settings: { ...DEFAULT_SETTINGS, ...((settingsRes.data as Settings | null) ?? {}) },
+    locations: Object.fromEntries(rows.map((b) => [b.id, [b.latitude, b.longitude]])),
   };
 });
 

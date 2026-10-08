@@ -19,7 +19,12 @@ export interface Barangay {
   sort_order: number;
   monitors_coastal: boolean;
   is_active: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
+
+/** Barangay id → [latitude, longitude] for barangays that have a map position. */
+export type BarangayLocations = Record<string, [number, number]>;
 
 export interface ConditionOption {
   id: string;

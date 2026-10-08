@@ -1,13 +1,17 @@
-import { Anchor, CloudRain, Route, Waves, Wind, Zap, ZapOff } from 'lucide-react';
+import { Anchor, Route, Waves, Zap, ZapOff } from 'lucide-react';
 import { LEVEL_LABEL, POWER_LABEL, ROAD_LABEL } from '@/lib/labels';
+import type { ConditionLook } from '@/lib/map/conditions';
 import { NONE } from '@/lib/summary';
 import type { ReportEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ConditionChip, NoResponseLabel, StatusItem } from './entry-parts';
+import { ConditionLabel } from './condition-icon';
+import { NoResponseLabel, StatusItem } from './entry-parts';
 
 type Groups = { zone: string; entries: ReportEntry[] }[];
 
-function BarangayCard({ entry, optionLabel, flash }: { entry: ReportEntry; optionLabel: (id: string | null) => string; flash: boolean }) {
+type Look = (id: string | null) => ConditionLook | null;
+
+function BarangayCard({ entry, optionLabel, look, flash }: { entry: ReportEntry; optionLabel: (id: string | null) => string; look: Look; flash: boolean }) {
   const title = (
     <div className="flex items-baseline justify-between gap-3">
       <h3 className="text-lg font-bold">{entry.barangay_name}</h3>
@@ -26,9 +30,9 @@ function BarangayCard({ entry, optionLabel, flash }: { entry: ReportEntry; optio
   return (
     <article className={cn('rounded-xl border bg-card p-4', flash && 'motion-safe:animate-flash')}>
       {title}
-      <div className="mt-3 flex flex-wrap gap-2">
-        <ConditionChip icon={CloudRain} label={optionLabel(entry.weather_option_id)} />
-        <ConditionChip icon={Wind} label={optionLabel(entry.wind_option_id)} />
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 font-bold">
+        <ConditionLabel look={look(entry.weather_option_id)} fallback={optionLabel(entry.weather_option_id)} />
+        <ConditionLabel look={look(entry.wind_option_id)} fallback={optionLabel(entry.wind_option_id)} />
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3">
         <StatusItem label="Road" icon={Route} value={entry.road} text={entry.road ? ROAD_LABEL[entry.road] : NONE} />
@@ -48,9 +52,10 @@ function BarangayCard({ entry, optionLabel, flash }: { entry: ReportEntry; optio
   );
 }
 
-export function BarangayCards({ groups, optionLabel, flashIds }: {
+export function BarangayCards({ groups, optionLabel, look, flashIds }: {
   groups: Groups;
   optionLabel: (id: string | null) => string;
+  look: Look;
   flashIds: ReadonlySet<string>;
 }) {
   return (
@@ -61,7 +66,7 @@ export function BarangayCards({ groups, optionLabel, flashIds }: {
           <ul className="space-y-3">
             {group.entries.map((entry) => (
               <li key={entry.id}>
-                <BarangayCard entry={entry} optionLabel={optionLabel} flash={flashIds.has(entry.id)} />
+                <BarangayCard entry={entry} optionLabel={optionLabel} look={look} flash={flashIds.has(entry.id)} />
               </li>
             ))}
           </ul>

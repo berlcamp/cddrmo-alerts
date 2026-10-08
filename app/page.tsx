@@ -31,6 +31,7 @@ export default async function HomePage() {
       initial={bundle}
       options={reference.options}
       settings={reference.settings}
+      locations={reference.locations}
       isLatest
       shareUrl={reportUrl(bundle.report.id)}
     />

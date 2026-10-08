@@ -45,13 +45,23 @@ export const staffSchema = z.object({
   position: z.string().trim().max(120),
 });
 
-export const barangaySchema = z.object({
-  name: z.string().trim().min(1, 'Enter the barangay name.').max(80),
-  callsign: z.string().trim().min(1, 'Enter the callsign.').max(40),
-  zone_id: z.uuid('Choose a zone.'),
-  monitors_coastal: z.boolean(),
-  is_active: z.boolean(),
-});
+const coordinate = (min: number, max: number, message: string) =>
+  z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.coerce.number({ message }).min(min, message).max(max, message).nullable(),
+  );
+
+export const barangaySchema = z
+  .object({
+    name: z.string().trim().min(1, 'Enter the barangay name.').max(80),
+    callsign: z.string().trim().min(1, 'Enter the callsign.').max(40),
+    zone_id: z.uuid('Choose a zone.'),
+    monitors_coastal: z.boolean(),
+    is_active: z.boolean(),
+    latitude: coordinate(-90, 90, 'Latitude must be a number between -90 and 90.'),
+    longitude: coordinate(-180, 180, 'Longitude must be a number between -180 and 180.'),
+  })
+  .refine((b) => (b.latitude === null) === (b.longitude === null), { message: 'Enter both latitude and longitude, or leave both blank.' });
 
 export const optionSchema = z.object({
   kind: z.enum(['weather', 'wind']),

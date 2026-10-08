@@ -23,6 +23,8 @@ export async function saveBarangay(_prev: ActionResult | null, formData: FormDat
     zone_id: formData.get('zone_id'),
     monitors_coastal: formData.get('monitors_coastal') === 'on',
     is_active: formData.get('is_active') === 'on',
+    latitude: formData.get('latitude') ?? '',
+    longitude: formData.get('longitude') ?? '',
   });
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Check the form.');
   const db = cdrrmo(await createClient());
