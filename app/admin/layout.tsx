@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-dvh">
       <header className="bg-brand text-brand-foreground">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
-          <Link href="/admin/reports" className="flex min-h-11 items-center gap-2 font-bold">
+          <Link href="/admin" className="flex min-h-11 items-center gap-2 font-bold">
             <Image src="/ozamiz_seal.jpg" alt="" width={1426} height={1440} sizes="32px" className="size-8 rounded-full bg-white object-contain" /> CDRRMO SitRep
           </Link>
           <AdminNav isSuperAdmin={staff.role === 'super_admin'} />

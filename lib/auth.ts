@@ -20,7 +20,7 @@ export async function requireStaff(): Promise<StaffUser> {
 
 export async function requireSuperAdmin(): Promise<StaffUser> {
   const staff = await requireStaff();
-  if (staff.role !== 'super_admin') redirect('/admin/reports');
+  if (staff.role !== 'super_admin') redirect('/admin');
   return staff;
 }
 

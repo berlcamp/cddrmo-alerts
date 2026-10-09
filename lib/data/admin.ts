@@ -1,7 +1,7 @@
 import 'server-only';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
-import type { Barangay, ConditionOption, Report, Settings, StaffUser, Zone } from '@/lib/types';
+import type { Barangay, ConditionOption, Report, ReportEntry, Settings, StaffUser, Zone } from '@/lib/types';
 
 async function db() {
   return cdrrmo(await createClient());
@@ -49,4 +49,28 @@ export async function getSettings(): Promise<Settings> {
   const { data, error } = await (await db()).from('settings').select('*').eq('id', 1).single();
   if (error) throw new Error(`Could not load settings: ${error.message}`);
   return data as Settings;
+}
+
+export const DASHBOARD_WINDOW = 30;
+
+/** The newest reports with their rows, plus whole-table counts, for the admin dashboard. */
+export async function getDashboardData(): Promise<{
+  rows: { report: Report; entries: ReportEntry[] }[];
+  publishedCount: number;
+  barangayCount: number;
+}> {
+  const client = await db();
+  const [reportsRes, publishedRes, barangaysRes] = await Promise.all([
+    client.from('reports').select('*, report_entries(*)').order('report_at', { ascending: false }).limit(DASHBOARD_WINDOW),
+    client.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'published'),
+    client.from('barangays').select('id', { count: 'exact', head: true }).eq('is_active', true),
+  ]);
+  if (reportsRes.error) throw new Error(`Could not load reports: ${reportsRes.error.message}`);
+  if (publishedRes.error) throw new Error(`Could not count reports: ${publishedRes.error.message}`);
+  if (barangaysRes.error) throw new Error(`Could not count barangays: ${barangaysRes.error.message}`);
+  const rows = ((reportsRes.data ?? []) as (Report & { report_entries: ReportEntry[] })[]).map(({ report_entries, ...report }) => ({
+    report,
+    entries: [...report_entries].sort((a, b) => a.zone_sort - b.zone_sort || a.sort_order - b.sort_order),
+  }));
+  return { rows, publishedCount: publishedRes.count ?? 0, barangayCount: barangaysRes.count ?? 0 };
 }
