@@ -4,6 +4,7 @@ import type { Barangay, RadioOperator, Zone } from '@/lib/types';
 const MONTH_KEY = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const DAY_KEY = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const monthFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+const shortDayFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 const weekdayFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'narrow' });
 
 export function isMonthKey(value: string): boolean {
@@ -42,6 +43,12 @@ export function monthDays(month: string): { key: string; day: number; weekday: s
   });
 }
 
+/** "Oct 2" for a YYYY-MM-DD day. */
+export function formatShortDay(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return shortDayFmt.format(new Date(Date.UTC(y, m - 1, d)));
+}
+
 export function formatMonth(month: string): string {
   const [y, m] = month.split('-').map(Number);
   return monthFmt.format(new Date(Date.UTC(y, m - 1, 1)));
@@ -56,4 +63,55 @@ export function sortOperators(operators: RadioOperator[], barangays: Barangay[],
     const [zb, bb] = rank.get(b.barangay_id) ?? [Infinity, Infinity];
     return za - zb || ba - bb || a.name.localeCompare(b.name);
   });
+}
+
+export const ABSENCE_WINDOW = 14;
+export const ABSENCE_THRESHOLD = 3;
+
+export function addDays(day: string, delta: number): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
+}
+
+export interface AbsentOperator {
+  operator: RadioOperator;
+  /** Days in the window the operator was not marked present. */
+  missed: number;
+  /** Days in the window counted for this operator (fewer when they were added recently). */
+  tracked: number;
+  /** Consecutive missed days ending yesterday. */
+  streak: number;
+  lastPresent: string | null;
+}
+
+/**
+ * Active operators who missed at least `ABSENCE_THRESHOLD` of the `ABSENCE_WINDOW` days ending yesterday.
+ * Today is left out because it is still being marked; days before the operator was added don't count.
+ */
+export function recurringAbsences(
+  operators: (RadioOperator & { created_at: string })[],
+  attendance: { operator_id: string; day: string }[],
+  today: string,
+): AbsentOperator[] {
+  const present = new Set(attendance.map((a) => `${a.operator_id}|${a.day}`));
+  const lastPresent = new Map<string, string>();
+  for (const a of attendance) if (a.day < today && a.day > (lastPresent.get(a.operator_id) ?? '')) lastPresent.set(a.operator_id, a.day);
+  const window = Array.from({ length: ABSENCE_WINDOW }, (_, i) => addDays(today, -1 - i)); // newest first
+  return operators
+    .filter((o) => o.status === 'active')
+    .map((operator) => {
+      const since = manilaDayKey(operator.created_at);
+      const days = window.filter((d) => d >= since);
+      const absent = days.map((d) => !present.has(`${operator.id}|${d}`));
+      const streak = absent.findIndex((a) => !a);
+      return {
+        operator,
+        missed: absent.filter(Boolean).length,
+        tracked: days.length,
+        streak: streak === -1 ? absent.length : streak,
+        lastPresent: lastPresent.get(operator.id) ?? null,
+      };
+    })
+    .filter((a) => a.missed >= ABSENCE_THRESHOLD)
+    .sort((a, b) => b.missed - a.missed || b.streak - a.streak || a.operator.name.localeCompare(b.operator.name));
 }

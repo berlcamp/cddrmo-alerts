@@ -58,6 +58,24 @@ export async function listAttendance(month: string, lastDay: string): Promise<{ 
   return (data ?? []) as { operator_id: string; day: string }[];
 }
 
+/** Active operators (with when they were added) and their attendance between two days, inclusive. */
+export async function getAttendanceWindow(from: string, to: string): Promise<{
+  operators: (RadioOperator & { created_at: string })[];
+  attendance: { operator_id: string; day: string }[];
+}> {
+  const client = await db();
+  const [operatorsRes, attendanceRes] = await Promise.all([
+    client.from('radio_operators').select('id, barangay_id, name, callsign, position, contact_number, status, created_at').eq('status', 'active'),
+    client.from('operator_attendance').select('operator_id, day').gte('day', from).lte('day', to),
+  ]);
+  if (operatorsRes.error) throw new Error(`Could not load radio operators: ${operatorsRes.error.message}`);
+  if (attendanceRes.error) throw new Error(`Could not load attendance: ${attendanceRes.error.message}`);
+  return {
+    operators: (operatorsRes.data ?? []) as (RadioOperator & { created_at: string })[],
+    attendance: (attendanceRes.data ?? []) as { operator_id: string; day: string }[],
+  };
+}
+
 export async function listOptions(): Promise<ConditionOption[]> {
   const { data, error } = await (await db()).from('condition_options').select('*').order('kind').order('sort_order');
   if (error) throw new Error(`Could not load options: ${error.message}`);
