@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { fail, ok, type ActionResult } from '@/lib/action-result';
 import { getCurrentStaff } from '@/lib/auth';
 import { isUuid } from '@/lib/ids';
-import { moveWithinGroup } from '@/lib/reorder';
+import { reorderGroup } from '@/lib/reorder';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
 import { barangaySchema } from '@/lib/validation';
@@ -43,15 +43,15 @@ export async function saveBarangay(_prev: ActionResult | null, formData: FormDat
   return ok(null);
 }
 
-export async function moveBarangay(id: string, direction: 'up' | 'down'): Promise<ActionResult> {
+export async function reorderBarangays(zoneId: string, orderedIds: string[]): Promise<ActionResult> {
   if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
+  if (typeof zoneId !== 'string' || !isUuid(zoneId) || !Array.isArray(orderedIds) || !orderedIds.every((id) => typeof id === 'string' && isUuid(id))) return fail('Unknown barangay.');
   const db = cdrrmo(await createClient());
-  const { data, error } = await db.from('barangays').select('id, zone_id, sort_order');
+  const { data, error } = await db.from('barangays').select('id, sort_order').eq('zone_id', zoneId);
   if (error) return fail(error.message, true);
-  const rows = (data ?? []) as { id: string; zone_id: string; sort_order: number }[];
-  const current = rows.find((row) => row.id === id);
-  if (!current) return fail('Unknown barangay.');
-  for (const change of moveWithinGroup(rows.filter((row) => row.zone_id === current.zone_id), id, direction)) {
+  const changes = reorderGroup((data ?? []) as { id: string; sort_order: number }[], orderedIds);
+  if (!changes) return fail('The list changed in the meantime. Reload the page and try again.');
+  for (const change of changes) {
     const { error: updateError } = await db.from('barangays').update({ sort_order: change.sort_order }).eq('id', change.id);
     if (updateError) return fail(updateError.message, true);
   }

@@ -1,6 +1,9 @@
 'use client';
 
-import { Anchor, ArrowDown, ArrowUp, MapPinOff, Pencil, Plus, RadioOff, Search, type LucideIcon } from 'lucide-react';
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type Modifier } from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Anchor, GripVertical, MapPinOff, Pencil, Plus, RadioOff, Search, type LucideIcon } from 'lucide-react';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { FormField } from '@/components/form-field';
@@ -10,7 +13,9 @@ import { Input } from '@/components/ui/input';
 import type { ActionResult } from '@/lib/action-result';
 import type { Barangay, Zone } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { moveBarangay, saveBarangay } from './actions';
+import { reorderBarangays, saveBarangay } from './actions';
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 });
 
 const SELECT = 'h-11 w-full rounded-md border border-input bg-card px-3 text-base';
 
@@ -105,27 +110,31 @@ function Tag({ icon: Icon, label, className }: { icon?: LucideIcon; label: strin
   );
 }
 
-function BarangayRow({ barangay, zones, position, isFirst, isLast, canMove }: {
-  barangay: Barangay;
-  zones: Zone[];
-  position: number;
-  isFirst: boolean;
-  isLast: boolean;
-  canMove: boolean;
-}) {
-  const [pending, startTransition] = useTransition();
-  const move = (direction: 'up' | 'down') =>
-    startTransition(async () => {
-      try {
-        const result = await moveBarangay(barangay.id, direction);
-        if (!result.ok) toast.error(result.message);
-      } catch {
-        toast.error("Couldn't move it. Check your connection and try again.");
-      }
-    });
+function BarangayRow({ barangay, zones, position, sortable }: { barangay: Barangay; zones: Zone[]; position: number; sortable: boolean }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: barangay.id, disabled: !sortable });
   const located = barangay.latitude !== null && barangay.longitude !== null;
   return (
-    <li className={cn('flex items-center gap-3 px-3 py-2.5 sm:px-4', !barangay.is_active && 'bg-muted/40')}>
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        'relative flex items-center gap-2 bg-card px-2 py-2.5 sm:gap-3 sm:px-3',
+        !barangay.is_active && 'bg-muted/40',
+        isDragging && 'z-10 rounded-lg shadow-lg ring-2 ring-primary/40',
+      )}
+    >
+      {sortable && (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          aria-label={`Reorder ${barangay.name}`}
+          className="flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground active:cursor-grabbing"
+        >
+          <GripVertical className="size-5" aria-hidden />
+        </button>
+      )}
       <span className="w-6 shrink-0 text-right text-sm tabular text-muted-foreground">{position}</span>
       <div className="min-w-0 flex-1">
         <p className={cn('font-bold', !barangay.is_active && 'text-muted-foreground')}>
@@ -141,20 +150,66 @@ function BarangayRow({ barangay, zones, position, isFirst, isLast, canMove }: {
           </div>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {canMove && (
-          <>
-            <Button type="button" variant="ghost" size="icon" className="size-11 cursor-pointer" aria-label={`Move ${barangay.name} up`} disabled={isFirst || pending} onClick={() => move('up')}>
-              <ArrowUp aria-hidden />
-            </Button>
-            <Button type="button" variant="ghost" size="icon" className="size-11 cursor-pointer" aria-label={`Move ${barangay.name} down`} disabled={isLast || pending} onClick={() => move('down')}>
-              <ArrowDown aria-hidden />
-            </Button>
-          </>
-        )}
-        <BarangayDialog zones={zones} barangay={barangay} />
-      </div>
+      <BarangayDialog zones={zones} barangay={barangay} />
     </li>
+  );
+}
+
+function ZoneList({ zone, zones, rows, shown, sortable }: { zone: Zone; zones: Zone[]; rows: Barangay[]; shown: Barangay[]; sortable: boolean }) {
+  const serverOrder = rows.map((row) => row.id).join(',');
+  const [order, setOrder] = useState({ server: serverOrder, ids: rows.map((row) => row.id) });
+  // A fresh server list (after a save or someone else's change) replaces the local order.
+  if (order.server !== serverOrder) setOrder({ server: serverOrder, ids: rows.map((row) => row.id) });
+  const [, startTransition] = useTransition();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const ordered = order.ids.map((id) => byId.get(id)).filter((row): row is Barangay => row !== undefined);
+  const list = sortable ? ordered : shown;
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const previous = order;
+    const ids = arrayMove(order.ids, order.ids.indexOf(String(active.id)), order.ids.indexOf(String(over.id)));
+    setOrder({ server: previous.server, ids });
+    startTransition(async () => {
+      try {
+        const result = await reorderBarangays(zone.id, ids);
+        if (!result.ok) {
+          setOrder(previous);
+          toast.error(result.message);
+        }
+      } catch {
+        setOrder(previous);
+        toast.error("Couldn't save the new order. Check your connection and try again.");
+      }
+    });
+  };
+
+  if (list.length === 0) return <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No barangays in this zone yet.</p>;
+  const items = (
+    <ul className="divide-y rounded-xl border bg-card">
+      {list.map((barangay) => (
+        <BarangayRow key={barangay.id} barangay={barangay} zones={zones} position={ordered.indexOf(barangay) + 1} sortable={sortable} />
+      ))}
+    </ul>
+  );
+  if (!sortable) return items;
+  return (
+    <DndContext
+      id={`zone-dnd-${zone.id}`}
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToVerticalAxis]}
+      onDragEnd={onDragEnd}
+      accessibility={{
+        screenReaderInstructions: { draggable: 'To reorder, press Space or Enter on the handle, use the arrow keys to move, then press Space or Enter again to drop. Press Escape to cancel.' },
+      }}
+    >
+      <SortableContext items={order.ids} strategy={verticalListSortingStrategy}>{items}</SortableContext>
+    </DndContext>
   );
 }
 
@@ -189,7 +244,7 @@ export function BarangaysManager({ zones, barangays }: { zones: Zone[]; barangay
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-2xl">
           <h1 className="text-2xl font-bold">Barangays</h1>
-          <p className="text-muted-foreground">The roll call for new reports, in order. Use the arrows to reorder within a zone. Existing reports keep the names and callsigns they were created with.</p>
+          <p className="text-muted-foreground">The roll call for new reports, in order. Drag the handle to reorder within a zone. Existing reports keep the names and callsigns they were created with.</p>
         </div>
         <BarangayDialog zones={zones} />
       </div>
@@ -221,26 +276,7 @@ export function BarangaysManager({ zones, barangays }: { zones: Zone[]; barangay
             <h2 id={`zone-${zone.id}`} className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{zone.name}</h2>
             <span className="text-xs font-bold text-muted-foreground">{rows.length} {rows.length === 1 ? 'barangay' : 'barangays'}</span>
           </div>
-          {shown.length === 0 ? (
-            <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No barangays in this zone yet.</p>
-          ) : (
-            <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-              {shown.map((barangay) => {
-                const index = rows.indexOf(barangay);
-                return (
-                  <BarangayRow
-                    key={barangay.id}
-                    barangay={barangay}
-                    zones={zones}
-                    position={index + 1}
-                    isFirst={index === 0}
-                    isLast={index === rows.length - 1}
-                    canMove={!term}
-                  />
-                );
-              })}
-            </ul>
-          )}
+          <ZoneList zone={zone} zones={zones} rows={rows} shown={shown} sortable={!term} />
         </section>
       ))}
     </div>
