@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barangaySchema, entryPatchSchema, newReportSchema, reportPatchSchema, staffSchema } from '@/lib/validation';
+import { barangaySchema, entryPatchSchema, newReportSchema, reportPatchSchema, staffSchema, zoneSchema } from '@/lib/validation';
 
 const UUID = '3f2b6a0e-9c1d-4e5f-8a7b-1c2d3e4f5a6b';
 
@@ -44,7 +44,7 @@ describe('staffSchema', () => {
 });
 
 describe('barangaySchema coordinates', () => {
-  const base = { name: 'Gala', callsign: 'Golf 2', zone_id: UUID, monitors_coastal: false, is_active: true };
+  const base = { name: 'Gala', callsign: 'Golf 2', zone_id: UUID, monitors_coastal: false, no_radio: false, is_active: true };
   it('accepts both, or neither', () => {
     expect(barangaySchema.safeParse({ ...base, latitude: '8.1558', longitude: '123.7183' }).data).toMatchObject({ latitude: 8.1558, longitude: 123.7183 });
     expect(barangaySchema.safeParse({ ...base, latitude: '', longitude: ' ' }).data).toMatchObject({ latitude: null, longitude: null });
@@ -53,5 +53,13 @@ describe('barangaySchema coordinates', () => {
     expect(barangaySchema.safeParse({ ...base, latitude: '8.15', longitude: '' }).success).toBe(false);
     expect(barangaySchema.safeParse({ ...base, latitude: '91', longitude: '123' }).success).toBe(false);
     expect(barangaySchema.safeParse({ ...base, latitude: 'abc', longitude: '123' }).success).toBe(false);
+  });
+});
+
+describe('zoneSchema', () => {
+  it('trims the name and rejects blanks', () => {
+    expect(zoneSchema.safeParse({ name: '  Zone 4 ' }).data).toEqual({ name: 'Zone 4' });
+    expect(zoneSchema.safeParse({ name: '   ' }).success).toBe(false);
+    expect(zoneSchema.safeParse({ name: 'x'.repeat(61) }).success).toBe(false);
   });
 });

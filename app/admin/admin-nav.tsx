@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const ITEMS = [
+  { href: '/admin', label: 'Dashboard', superOnly: false, exact: true },
   { href: '/admin/reports', label: 'Reports', superOnly: false },
   { href: '/admin/barangays', label: 'Barangays', superOnly: false },
+  { href: '/admin/zones', label: 'Zones', superOnly: false },
   { href: '/admin/options', label: 'Options', superOnly: false },
   { href: '/admin/settings', label: 'Settings', superOnly: false },
   { href: '/admin/users', label: 'Users', superOnly: true },
@@ -17,7 +19,7 @@ export function AdminNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   return (
     <nav aria-label="Admin" className="flex flex-wrap gap-1">
       {ITEMS.filter((item) => isSuperAdmin || !item.superOnly).map((item) => {
-        const active = pathname.startsWith(item.href);
+        const active = 'exact' in item ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

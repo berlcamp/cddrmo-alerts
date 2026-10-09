@@ -57,11 +57,16 @@ export const barangaySchema = z
     callsign: z.string().trim().min(1, 'Enter the callsign.').max(40),
     zone_id: z.uuid('Choose a zone.'),
     monitors_coastal: z.boolean(),
+    no_radio: z.boolean(),
     is_active: z.boolean(),
     latitude: coordinate(-90, 90, 'Latitude must be a number between -90 and 90.'),
     longitude: coordinate(-180, 180, 'Longitude must be a number between -180 and 180.'),
   })
   .refine((b) => (b.latitude === null) === (b.longitude === null), { message: 'Enter both latitude and longitude, or leave both blank.' });
+
+export const zoneSchema = z.object({
+  name: z.string().trim().min(1, 'Enter the zone name.').max(60),
+});
 
 export const optionSchema = z.object({
   kind: z.enum(['weather', 'wind']),
