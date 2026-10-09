@@ -13,6 +13,7 @@ import type { ActionResult } from '@/lib/action-result';
 import type { Barangay, OperatorStatus, RadioOperator, Zone } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { deleteOperator, saveOperator } from './actions';
+import { ImportDialog } from './import-dialog';
 
 const SELECT = 'h-11 w-full rounded-md border border-input bg-card px-3 text-base';
 const STATUS_FILTERS = ['all', 'active', 'inactive'] as const;
@@ -186,6 +187,7 @@ export function OperatorsManager({ zones, barangays, operators }: { zones: Zone[
           <Link href="/admin/radio-operators/attendance" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'h-11')}>
             <CalendarCheck aria-hidden /> Manage attendance
           </Link>
+          <ImportDialog barangays={barangays} operators={operators} />
           <OperatorDialog zones={zones} barangays={barangays} />
         </div>
       </div>
@@ -229,7 +231,7 @@ export function OperatorsManager({ zones, barangays, operators }: { zones: Zone[
       {operators.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-bold">No radio operators yet</p>
-          <p className="text-sm text-muted-foreground">Add the operator for each barangay to start tracking attendance.</p>
+          <p className="text-sm text-muted-foreground">Add the operator for each barangay, or import them from a CSV file, to start tracking attendance.</p>
         </div>
       ) : rows.length === 0 ? (
         <p className="rounded-xl border bg-card p-6 text-center text-muted-foreground">No operator matches your search.</p>
