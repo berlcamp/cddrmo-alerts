@@ -15,6 +15,24 @@ function dbMessage(error: { code?: string; message: string }): string {
   return error.code === '23505' ? 'A barangay with that name already exists.' : `Could not save: ${error.message}`;
 }
 
+/** Carries the no-radio flag onto the latest published report and any drafts, so the public page shows it now. */
+async function syncNoRadio(db: ReturnType<typeof cdrrmo>, barangayId: string, noRadio: boolean): Promise<ActionResult | null> {
+  const [latest, drafts] = await Promise.all([
+    db.from('reports').select('id').eq('status', 'published').order('report_at', { ascending: false }).limit(1),
+    db.from('reports').select('id').eq('status', 'draft'),
+  ]);
+  if (latest.error || drafts.error) return fail(`Saved, but could not update the latest report: ${(latest.error ?? drafts.error)?.message}`);
+  const reportIds = [...(latest.data ?? []), ...(drafts.data ?? [])].map((row) => (row as { id: string }).id);
+  if (reportIds.length === 0) return null;
+  const { error } = await db
+    .from('report_entries')
+    .update({ no_radio: noRadio })
+    .eq('barangay_id', barangayId)
+    .in('report_id', reportIds)
+    .neq('no_radio', noRadio);
+  return error ? fail(`Saved, but could not update the latest report: ${error.message}`) : null;
+}
+
 export async function saveBarangay(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
   const parsed = barangaySchema.safeParse({
@@ -34,6 +52,8 @@ export async function saveBarangay(_prev: ActionResult | null, formData: FormDat
     if (!isUuid(id)) return fail('Unknown barangay.');
     const { error } = await db.from('barangays').update(parsed.data).eq('id', id);
     if (error) return fail(dbMessage(error));
+    const synced = await syncNoRadio(db, id, parsed.data.no_radio);
+    if (synced) return synced;
   } else {
     const { data: last } = await db.from('barangays').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
     const { error } = await db.from('barangays').insert({ ...parsed.data, sort_order: ((last as { sort_order: number } | null)?.sort_order ?? 0) + 1 });

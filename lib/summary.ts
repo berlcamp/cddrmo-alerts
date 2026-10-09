@@ -100,3 +100,12 @@ export function describeSummary(s: ReportSummary): string {
     `Rivers ${s.rivers.toLowerCase()}`,
   ].join(' · ');
 }
+
+export const NO_RADIO_REMARK = 'No radio capability';
+
+/** An entry's remarks with the automatic "No radio capability" note first, for plain-text outputs. */
+export function entryRemarks(entry: Pick<ReportEntry, 'no_radio' | 'remarks'>): string {
+  const remarks = entry.remarks?.trim() ?? '';
+  if (!entry.no_radio || remarks.toLowerCase().includes(NO_RADIO_REMARK.toLowerCase())) return remarks;
+  return remarks ? `${NO_RADIO_REMARK} · ${remarks}` : NO_RADIO_REMARK;
+}

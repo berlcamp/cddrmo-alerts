@@ -5,7 +5,7 @@ import { NONE } from '@/lib/summary';
 import type { ReportEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ConditionLabel } from './condition-icon';
-import { NoRadioBadge, NoResponseLabel, StatusItem } from './entry-parts';
+import { EntryRemarks, NoResponseLabel, StatusItem } from './entry-parts';
 
 type Groups = { zone: string; entries: ReportEntry[] }[];
 
@@ -18,24 +18,18 @@ function BarangayCard({ entry, optionLabel, look, flash }: { entry: ReportEntry;
       <span className="shrink-0 text-sm font-bold text-muted-foreground">{entry.callsign}</span>
     </div>
   );
-  const heading = (
-    <>
-      {title}
-      {entry.no_radio && <p className="mt-1"><NoRadioBadge /></p>}
-    </>
-  );
   if (!entry.responded) {
     return (
       <article className={cn('rounded-xl border border-danger/30 bg-danger-soft p-4', flash && 'motion-safe:animate-flash')}>
-        {heading}
+        {title}
         <p className="mt-2"><NoResponseLabel /></p>
-        {entry.remarks && <p className="mt-1 text-sm">{entry.remarks}</p>}
+        <EntryRemarks entry={entry} className="mt-1 text-sm" />
       </article>
     );
   }
   return (
     <article className={cn('rounded-xl border bg-card p-4', flash && 'motion-safe:animate-flash')}>
-      {heading}
+      {title}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 font-bold">
         <ConditionLabel look={look(entry.weather_option_id)} fallback={optionLabel(entry.weather_option_id)} />
         <ConditionLabel look={look(entry.wind_option_id)} fallback={optionLabel(entry.wind_option_id)} />
@@ -53,7 +47,7 @@ function BarangayCard({ entry, optionLabel, look, flash }: { entry: ReportEntry;
           text={entry.power ? POWER_LABEL[entry.power] : NONE}
         />
       </dl>
-      {entry.remarks && <p className="mt-3 text-sm text-muted-foreground">{entry.remarks}</p>}
+      <EntryRemarks entry={entry} className="mt-3 text-sm text-muted-foreground" />
     </article>
   );
 }

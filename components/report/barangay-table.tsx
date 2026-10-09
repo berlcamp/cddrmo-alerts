@@ -5,7 +5,7 @@ import { NONE } from '@/lib/summary';
 import type { Level, Power, ReportEntry, Road } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ConditionLabel } from './condition-icon';
-import { NoRadioBadge, NoResponseLabel } from './entry-parts';
+import { EntryRemarks, NoResponseLabel } from './entry-parts';
 import { StatusBadge } from './status-badge';
 
 type Groups = { zone: string; entries: ReportEntry[] }[];
@@ -44,10 +44,7 @@ export function BarangayTable({ groups, optionLabel, look, flashIds, numbers }: 
               <tr key={e.id} className={cn('transition-colors duration-150 hover:bg-accent/60', !e.responded && 'bg-danger-soft hover:bg-danger-soft', flashIds.has(e.id) && 'motion-safe:animate-flash')}>
                 <td className="px-3 py-2.5 tabular text-muted-foreground">{numbers.get(e.id)}</td>
                 <th scope="row" className="px-3 py-2.5 font-bold">{e.barangay_name}</th>
-                <td className="px-3 py-2.5">
-                  <span className="block">{e.callsign}</span>
-                  {e.no_radio && <span className="mt-1 block"><NoRadioBadge /></span>}
-                </td>
+                <td className="px-3 py-2.5">{e.callsign}</td>
                 {e.responded ? (
                   <>
                     <td className="px-3 py-2.5"><ConditionLabel look={look(e.weather_option_id)} fallback={optionLabel(e.weather_option_id)} /></td>
@@ -62,7 +59,7 @@ export function BarangayTable({ groups, optionLabel, look, flashIds, numbers }: 
                 ) : (
                   <td colSpan={6} className="px-3 py-2.5"><NoResponseLabel /></td>
                 )}
-                <td className="px-3 py-2.5">{e.remarks}</td>
+                <td className="px-3 py-2.5"><EntryRemarks entry={e} /></td>
               </tr>
             ))}
           </tbody>

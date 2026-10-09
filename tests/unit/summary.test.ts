@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeSummary, entryHasIssue, joinRange, NONE, summarizeCondition, summarizeReport } from '@/lib/summary';
+import { describeSummary, entryHasIssue, entryRemarks, joinRange, NONE, summarizeCondition, summarizeReport } from '@/lib/summary';
 import { summaryTone, valueTone, makeOptionLabeler } from '@/lib/labels';
 import { makeEntry, OPTIONS, SAMPLE_ENTRIES, SAMPLE_REPORT } from '../fixtures/sample-sitrep';
 
@@ -100,5 +100,17 @@ describe('labels', () => {
   it('treats no response as an issue', () => {
     expect(entryHasIssue(makeEntry(1, 'A', 'A', 'Upland'))).toBe(true);
     expect(entryHasIssue(SAMPLE_ENTRIES[0])).toBe(false);
+  });
+});
+
+describe('entryRemarks', () => {
+  it('adds the no-radio note before any remarks', () => {
+    expect(entryRemarks({ no_radio: true, remarks: null })).toBe('No radio capability');
+    expect(entryRemarks({ no_radio: true, remarks: ' Relayed by phone ' })).toBe('No radio capability · Relayed by phone');
+  });
+  it('leaves remarks alone without the flag or when the note is already written', () => {
+    expect(entryRemarks({ no_radio: false, remarks: 'Flooded' })).toBe('Flooded');
+    expect(entryRemarks({ no_radio: false, remarks: null })).toBe('');
+    expect(entryRemarks({ no_radio: true, remarks: 'no radio capability, used SMS' })).toBe('no radio capability, used SMS');
   });
 });

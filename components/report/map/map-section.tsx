@@ -9,7 +9,7 @@ import { NONE } from '@/lib/summary';
 import type { BarangayLocations, ConditionOption, ReportEntry, ReportSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ConditionDot, ConditionLabel } from '../condition-icon';
-import { NoResponseLabel, StatusItem } from '../entry-parts';
+import { EntryRemarks, NoResponseLabel, StatusItem } from '../entry-parts';
 import { StatusBadge } from '../status-badge';
 import { CoastalHighBadge, NoPowerBadge, UnpassableBadge } from './alert-badges';
 
@@ -72,7 +72,7 @@ function DetailsPanel({ entry, look, onClose }: { entry: ReportEntry; look: (id:
       ) : (
         <p className="mt-3"><NoResponseLabel /></p>
       )}
-      {entry.remarks && <p className="mt-3 text-sm text-muted-foreground">{entry.remarks}</p>}
+      <EntryRemarks entry={entry} className="mt-3 text-sm text-muted-foreground" />
     </div>
   );
 }
