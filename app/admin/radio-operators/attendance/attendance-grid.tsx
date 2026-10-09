@@ -61,6 +61,14 @@ export function AttendanceGrid({ month, today, operators, barangayNames, present
     chains.current.set(key, run);
   };
 
+  // Operators arrive in roll-call order, so each barangay's operators are already next to each other.
+  const groups: { barangayId: string; operators: RadioOperator[] }[] = [];
+  for (const o of operators) {
+    const last = groups[groups.length - 1];
+    if (last?.barangayId === o.barangay_id) last.operators.push(o);
+    else groups.push({ barangayId: o.barangay_id, operators: [o] });
+  }
+
   const dayTotal = (day: string) => operators.filter((o) => present.has(cellKey(o.id, day))).length;
   const operatorTotal = (o: RadioOperator) => days.filter((d) => present.has(cellKey(o.id, d.key))).length;
 
@@ -120,38 +128,48 @@ export function AttendanceGrid({ month, today, operators, barangayNames, present
                   <th scope="col" className="sticky right-0 z-20 border-b border-l bg-card px-3 py-2 text-right font-bold uppercase tracking-wide">Days</th>
                 </tr>
               </thead>
-              <tbody>
-                {operators.map((o) => (
-                  <tr key={o.id} className="group">
-                    <th scope="row" className="sticky left-0 z-10 max-w-36 border-b bg-card px-3 py-1.5 sm:max-w-52 text-left font-normal group-hover:bg-accent">
-                      <span className={cn('block truncate font-bold', o.status === 'inactive' && 'text-muted-foreground')}>
-                        {o.name}
-                        {o.status === 'inactive' && <span className="ml-1.5 text-xs font-normal">(inactive)</span>}
+              {groups.map((group) => (
+                <tbody key={group.barangayId}>
+                  <tr>
+                    <th scope="rowgroup" colSpan={days.length + 2} className="border-b bg-muted/60 p-0 text-left">
+                      <span className="sticky left-0 inline-flex items-baseline gap-2 px-3 py-1.5">
+                        <span className="text-xs font-bold uppercase tracking-wider">{barangayNames[group.barangayId] ?? 'Unknown barangay'}</span>
+                        <span className="text-xs text-muted-foreground">{group.operators.length} {group.operators.length === 1 ? 'operator' : 'operators'}</span>
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">{barangayNames[o.barangay_id] ?? 'Unknown barangay'}{o.callsign && ` · ${o.callsign}`}</span>
                     </th>
-                    {days.map((d) => {
-                      const checked = present.has(cellKey(o.id, d.key));
-                      const future = d.key > today;
-                      return (
-                        <td key={d.key} className={cn('border-b p-0 text-center group-hover:bg-accent/50', d.weekend && 'bg-muted/40', d.key === today && 'bg-primary/10')}>
-                          <label className={cn('flex size-10 items-center justify-center lg:h-10 lg:w-9', future ? 'cursor-not-allowed' : 'cursor-pointer')}>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={future}
-                              onChange={(event) => toggle(o, d.key, event.target.checked)}
-                              aria-label={`${o.name} present on ${formatMonth(month).split(' ')[0]} ${d.day}`}
-                              className="size-5 cursor-pointer accent-ok disabled:cursor-not-allowed disabled:opacity-30"
-                            />
-                          </label>
-                        </td>
-                      );
-                    })}
-                    <td className="sticky right-0 z-10 border-b border-l bg-card px-3 text-right font-bold tabular group-hover:bg-accent">{operatorTotal(o)}</td>
                   </tr>
-                ))}
-              </tbody>
+                  {group.operators.map((o) => (
+                    <tr key={o.id} className="group">
+                      <th scope="row" className="sticky left-0 z-10 max-w-36 border-b bg-card px-3 py-1.5 sm:max-w-52 text-left font-normal group-hover:bg-accent">
+                        <span className={cn('block truncate font-bold', o.status === 'inactive' && 'text-muted-foreground')}>
+                          {o.callsign || o.name}
+                          {o.status === 'inactive' && <span className="ml-1.5 text-xs font-normal">(inactive)</span>}
+                        </span>
+                        {o.callsign && <span className="block truncate text-xs text-muted-foreground">{o.name}</span>}
+                      </th>
+                      {days.map((d) => {
+                        const checked = present.has(cellKey(o.id, d.key));
+                        const future = d.key > today;
+                        return (
+                          <td key={d.key} className={cn('border-b p-0 text-center group-hover:bg-accent/50', d.weekend && 'bg-muted/40', d.key === today && 'bg-primary/10')}>
+                            <label className={cn('flex size-10 items-center justify-center lg:h-10 lg:w-9', future ? 'cursor-not-allowed' : 'cursor-pointer')}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={future}
+                                onChange={(event) => toggle(o, d.key, event.target.checked)}
+                                aria-label={`${o.callsign ? `${o.callsign}, ` : ''}${o.name} present on ${formatMonth(month).split(' ')[0]} ${d.day}`}
+                                className="size-5 cursor-pointer accent-ok disabled:cursor-not-allowed disabled:opacity-30"
+                              />
+                            </label>
+                          </td>
+                        );
+                      })}
+                      <td className="sticky right-0 z-10 border-b border-l bg-card px-3 text-right font-bold tabular group-hover:bg-accent">{operatorTotal(o)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
               <tfoot>
                 <tr className="text-xs text-muted-foreground">
                   <th scope="row" className="sticky left-0 z-10 bg-card px-3 py-2 text-left font-bold uppercase tracking-wide">Present</th>
