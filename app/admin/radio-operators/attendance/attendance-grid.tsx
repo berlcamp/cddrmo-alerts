@@ -61,13 +61,10 @@ export function AttendanceGrid({ month, today, operators, barangayNames, present
     chains.current.set(key, run);
   };
 
-  // Operators arrive in roll-call order, so each barangay's operators are already next to each other.
-  const groups: { barangayId: string; operators: RadioOperator[] }[] = [];
-  for (const o of operators) {
-    const last = groups[groups.length - 1];
-    if (last?.barangayId === o.barangay_id) last.operators.push(o);
-    else groups.push({ barangayId: o.barangay_id, operators: [o] });
-  }
+  // Operators arrive in list order (the CSV's row order); barangays appear where their first operator does.
+  const grouped = new Map<string, RadioOperator[]>();
+  for (const o of operators) grouped.set(o.barangay_id, [...(grouped.get(o.barangay_id) ?? []), o]);
+  const groups = [...grouped].map(([barangayId, list]) => ({ barangayId, operators: list }));
 
   const dayTotal = (day: string) => operators.filter((o) => present.has(cellKey(o.id, day))).length;
   const operatorTotal = (o: RadioOperator) => days.filter((d) => present.has(cellKey(o.id, d.key))).length;

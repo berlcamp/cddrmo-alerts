@@ -34,6 +34,8 @@ export interface RadioOperator {
   position: string;
   contact_number: string;
   status: OperatorStatus;
+  /** List position: the row order of the last CSV import; operators added by hand go last. */
+  sort_order: number;
 }
 
 /** Barangay id → [latitude, longitude] for barangays that have a map position. */

@@ -1,5 +1,5 @@
 import { manilaDayKey } from '@/lib/format';
-import type { Barangay, RadioOperator, Zone } from '@/lib/types';
+import type { RadioOperator } from '@/lib/types';
 
 const MONTH_KEY = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const DAY_KEY = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
@@ -52,17 +52,6 @@ export function formatShortDay(day: string): string {
 export function formatMonth(month: string): string {
   const [y, m] = month.split('-').map(Number);
   return monthFmt.format(new Date(Date.UTC(y, m - 1, 1)));
-}
-
-/** Operators in roll-call order: zone, then barangay, then name. */
-export function sortOperators(operators: RadioOperator[], barangays: Barangay[], zones: Zone[]): RadioOperator[] {
-  const zoneSort = new Map(zones.map((z) => [z.id, z.sort_order]));
-  const rank = new Map(barangays.map((b) => [b.id, [zoneSort.get(b.zone_id) ?? 0, b.sort_order] as const]));
-  return [...operators].sort((a, b) => {
-    const [za, ba] = rank.get(a.barangay_id) ?? [Infinity, Infinity];
-    const [zb, bb] = rank.get(b.barangay_id) ?? [Infinity, Infinity];
-    return za - zb || ba - bb || a.name.localeCompare(b.name);
-  });
 }
 
 export const ABSENCE_WINDOW = 14;

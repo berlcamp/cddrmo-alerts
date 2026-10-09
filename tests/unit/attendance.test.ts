@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, currentMonthKey, recurringAbsences, formatMonth, formatShortDay, isDayKey, isMonthKey, monthDays, shiftMonth, sortOperators } from '@/lib/attendance';
-import type { Barangay, RadioOperator, Zone } from '@/lib/types';
+import { addDays, currentMonthKey, recurringAbsences, formatMonth, formatShortDay, isDayKey, isMonthKey, monthDays, shiftMonth } from '@/lib/attendance';
 import { operatorSchema } from '@/lib/validation';
 
 describe('month and day keys', () => {
@@ -30,17 +29,6 @@ describe('month and day keys', () => {
   });
 });
 
-describe('sortOperators', () => {
-  const zones: Zone[] = [{ id: 'z2', name: 'Zone 2', sort_order: 2 }, { id: 'z1', name: 'Zone 1', sort_order: 1 }];
-  const brgy = (id: string, zone_id: string, sort_order: number) => ({ id, zone_id, sort_order }) as Barangay;
-  const op = (id: string, barangay_id: string, name: string) => ({ id, barangay_id, name }) as RadioOperator;
-  it('orders by zone, barangay, then name', () => {
-    const barangays = [brgy('a', 'z2', 1), brgy('b', 'z1', 5), brgy('c', 'z1', 2)];
-    const sorted = sortOperators([op('1', 'a', 'Ana'), op('2', 'b', 'Ben'), op('3', 'c', 'Zed'), op('4', 'c', 'Abe')], barangays, zones);
-    expect(sorted.map((o) => o.id)).toEqual(['4', '3', '2', '1']);
-  });
-});
-
 describe('operatorSchema', () => {
   const base = { barangay_id: '3f2b6a0e-9c1d-4e5f-8a7b-1c2d3e4f5a6b', name: ' Juan ', callsign: '', position: '', contact_number: '0917 123 4567', status: 'active' };
   it('accepts a minimal operator and trims', () => {
@@ -55,7 +43,7 @@ describe('operatorSchema', () => {
 
 describe('recurringAbsences', () => {
   const op = (id: string, created_at = '2026-01-01T00:00:00Z', status: 'active' | 'inactive' = 'active') =>
-    ({ id, name: id, barangay_id: 'b', callsign: '', position: '', contact_number: '', status, created_at });
+    ({ id, name: id, barangay_id: 'b', callsign: '', position: '', contact_number: '', status, sort_order: 0, created_at });
   const today = '2026-10-15';
   const presentOn = (id: string, ...days: number[]) => days.map((d) => ({ operator_id: id, day: `2026-10-${String(d).padStart(2, '0')}` }));
 

@@ -30,7 +30,8 @@ export async function saveOperator(_prev: ActionResult | null, formData: FormDat
     const { error } = await db.from('radio_operators').update(parsed.data).eq('id', id);
     if (error) return fail(`Could not save: ${error.message}`);
   } else {
-    const { error } = await db.from('radio_operators').insert(parsed.data);
+    const { data: last } = await db.from('radio_operators').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
+    const { error } = await db.from('radio_operators').insert({ ...parsed.data, sort_order: ((last as { sort_order: number } | null)?.sort_order ?? 0) + 1 });
     if (error) return fail(`Could not save: ${error.message}`);
   }
   revalidatePath('/admin/radio-operators', 'layout');
@@ -39,7 +40,8 @@ export async function saveOperator(_prev: ActionResult | null, formData: FormDat
 
 /**
  * Adds operators from a CSV import. A row whose barangay and name (ignoring case) match an existing operator
- * updates that operator instead of adding a duplicate.
+ * updates that operator instead of adding a duplicate. The file's row order becomes the list order; operators
+ * not in the file keep their order after the imported ones.
  */
 export async function importOperators(rows: unknown[]): Promise<ActionResult<{ added: number; updated: number }>> {
   if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
@@ -51,13 +53,15 @@ export async function importOperators(rows: unknown[]): Promise<ActionResult<{ a
   const data = parsed.map((p) => p.data!);
 
   const db = cdrrmo(await createClient());
-  const { data: current, error: loadError } = await db.from('radio_operators').select('id, barangay_id, name');
+  const { data: current, error: loadError } = await db.from('radio_operators').select('id, barangay_id, name, sort_order').order('sort_order');
   if (loadError) return fail(`Could not import: ${loadError.message}`, true);
+  const rowsNow = (current ?? []) as { id: string; barangay_id: string; name: string; sort_order: number }[];
   const key = (o: { barangay_id: string; name: string }) => `${o.barangay_id}|${o.name.trim().toLowerCase()}`;
-  const existing = new Map(((current ?? []) as { id: string; barangay_id: string; name: string }[]).map((o) => [key(o), o.id]));
+  const existing = new Map(rowsNow.map((o) => [key(o), o.id]));
 
-  const inserts = data.filter((row) => !existing.has(key(row)));
-  const updates = data.filter((row) => existing.has(key(row)));
+  const positioned = data.map((row, i) => ({ ...row, sort_order: i + 1 }));
+  const inserts = positioned.filter((row) => !existing.has(key(row)));
+  const updates = positioned.filter((row) => existing.has(key(row)));
   if (inserts.length > 0) {
     const { error } = await db.from('radio_operators').insert(inserts);
     if (error) return fail(`Could not import: ${error.message}`, true);
@@ -65,6 +69,14 @@ export async function importOperators(rows: unknown[]): Promise<ActionResult<{ a
   for (const row of updates) {
     const { error } = await db.from('radio_operators').update(row).eq('id', existing.get(key(row))!);
     if (error) return fail(`Added ${inserts.length}, but could not update ${row.name}: ${error.message}`, true);
+  }
+  const imported = new Set(updates.map((row) => existing.get(key(row))));
+  const rest = rowsNow.filter((o) => !imported.has(o.id));
+  for (const [i, o] of rest.entries()) {
+    const sort_order = positioned.length + i + 1;
+    if (o.sort_order === sort_order) continue;
+    const { error } = await db.from('radio_operators').update({ sort_order }).eq('id', o.id);
+    if (error) return fail(`Imported, but could not reorder the remaining operators: ${error.message}`, true);
   }
   revalidatePath('/admin/radio-operators', 'layout');
   revalidatePath('/admin');

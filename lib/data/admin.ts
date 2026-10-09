@@ -42,7 +42,9 @@ export async function listBarangays(): Promise<Barangay[]> {
 export async function listRadioOperators(): Promise<RadioOperator[]> {
   const { data, error } = await (await db())
     .from('radio_operators')
-    .select('id, barangay_id, name, callsign, position, contact_number, status');
+    .select('id, barangay_id, name, callsign, position, contact_number, status, sort_order')
+    .order('sort_order')
+    .order('name');
   if (error) throw new Error(`Could not load radio operators: ${error.message}`);
   return (data ?? []) as RadioOperator[];
 }
@@ -65,7 +67,7 @@ export async function getAttendanceWindow(from: string, to: string): Promise<{
 }> {
   const client = await db();
   const [operatorsRes, attendanceRes] = await Promise.all([
-    client.from('radio_operators').select('id, barangay_id, name, callsign, position, contact_number, status, created_at').eq('status', 'active'),
+    client.from('radio_operators').select('id, barangay_id, name, callsign, position, contact_number, status, sort_order, created_at').eq('status', 'active'),
     client.from('operator_attendance').select('operator_id, day').gte('day', from).lte('day', to),
   ]);
   if (operatorsRes.error) throw new Error(`Could not load radio operators: ${operatorsRes.error.message}`);

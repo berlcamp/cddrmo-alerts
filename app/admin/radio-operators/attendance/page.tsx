@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { currentMonthKey, isMonthKey, monthDays, sortOperators } from '@/lib/attendance';
+import { currentMonthKey, isMonthKey, monthDays } from '@/lib/attendance';
 import { requireStaff } from '@/lib/auth';
-import { listAttendance, listBarangays, listRadioOperators, listZones } from '@/lib/data/admin';
+import { listAttendance, listBarangays, listRadioOperators } from '@/lib/data/admin';
 import { manilaDayKey } from '@/lib/format';
 import { AttendanceGrid } from './attendance-grid';
 
@@ -12,15 +12,14 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const requested = (await searchParams).month ?? '';
   const month = isMonthKey(requested) ? requested : currentMonthKey();
   const days = monthDays(month);
-  const [zones, barangays, operators, attendance] = await Promise.all([
-    listZones(),
+  const [barangays, operators, attendance] = await Promise.all([
     listBarangays(),
     listRadioOperators(),
     listAttendance(month, days[days.length - 1].key),
   ]);
   const marked = new Set(attendance.map((a) => a.operator_id));
   // Inactive operators only appear for months they have attendance in.
-  const shown = sortOperators(operators, barangays, zones).filter((o) => o.status === 'active' || marked.has(o.id));
+  const shown = operators.filter((o) => o.status === 'active' || marked.has(o.id));
   const barangayNames = Object.fromEntries(barangays.map((b) => [b.id, b.name]));
   return (
     <AttendanceGrid
