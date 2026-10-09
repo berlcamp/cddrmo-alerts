@@ -8,6 +8,7 @@ const ITEMS = [
   { href: '/admin', label: 'Dashboard', superOnly: false, exact: true },
   { href: '/admin/reports', label: 'Reports', superOnly: false },
   { href: '/admin/barangays', label: 'Barangays', superOnly: false },
+  { href: '/admin/radio-operators', label: 'Radio Operators', superOnly: false },
   { href: '/admin/options', label: 'Options', superOnly: false },
   { href: '/admin/settings', label: 'Settings', superOnly: false },
   { href: '/admin/users', label: 'Users', superOnly: true },

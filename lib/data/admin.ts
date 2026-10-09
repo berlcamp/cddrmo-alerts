@@ -1,7 +1,7 @@
 import 'server-only';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
-import type { Barangay, ConditionOption, Report, ReportEntry, Settings, StaffUser, Zone } from '@/lib/types';
+import type { Barangay, ConditionOption, RadioOperator, Report, ReportEntry, Settings, StaffUser, Zone } from '@/lib/types';
 
 async function db() {
   return cdrrmo(await createClient());
@@ -37,6 +37,25 @@ export async function listBarangays(): Promise<Barangay[]> {
   const { data, error } = await (await db()).from('barangays').select('*').order('sort_order');
   if (error) throw new Error(`Could not load barangays: ${error.message}`);
   return (data ?? []) as Barangay[];
+}
+
+export async function listRadioOperators(): Promise<RadioOperator[]> {
+  const { data, error } = await (await db())
+    .from('radio_operators')
+    .select('id, barangay_id, name, callsign, position, contact_number, status');
+  if (error) throw new Error(`Could not load radio operators: ${error.message}`);
+  return (data ?? []) as RadioOperator[];
+}
+
+/** Days (YYYY-MM-DD) each operator was marked present in the given YYYY-MM month. */
+export async function listAttendance(month: string, lastDay: string): Promise<{ operator_id: string; day: string }[]> {
+  const { data, error } = await (await db())
+    .from('operator_attendance')
+    .select('operator_id, day')
+    .gte('day', `${month}-01`)
+    .lte('day', lastDay);
+  if (error) throw new Error(`Could not load attendance: ${error.message}`);
+  return (data ?? []) as { operator_id: string; day: string }[];
 }
 
 export async function listOptions(): Promise<ConditionOption[]> {

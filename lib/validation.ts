@@ -68,6 +68,19 @@ export const zoneSchema = z.object({
   name: z.string().trim().min(1, 'Enter the zone name.').max(60),
 });
 
+export const operatorSchema = z.object({
+  barangay_id: z.uuid('Choose a barangay.'),
+  name: z.string().trim().min(1, 'Enter the operator name.').max(120),
+  callsign: z.string().trim().max(40),
+  position: z.string().trim().max(120),
+  contact_number: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(/^[0-9+()\-\s]*$/, 'Contact number can only have digits, spaces, +, - and brackets.'),
+  status: z.enum(['active', 'inactive']),
+});
+
 export const optionSchema = z.object({
   kind: z.enum(['weather', 'wind']),
   label: z.string().trim().min(1, 'Enter a label.').max(60),

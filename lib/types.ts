@@ -24,6 +24,18 @@ export interface Barangay {
   longitude: number | null;
 }
 
+export type OperatorStatus = 'active' | 'inactive';
+
+export interface RadioOperator {
+  id: string;
+  barangay_id: string;
+  name: string;
+  callsign: string;
+  position: string;
+  contact_number: string;
+  status: OperatorStatus;
+}
+
 /** Barangay id → [latitude, longitude] for barangays that have a map position. */
 export type BarangayLocations = Record<string, [number, number]>;
 
