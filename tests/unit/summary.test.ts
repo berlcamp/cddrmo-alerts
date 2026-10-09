@@ -108,9 +108,11 @@ describe('entryRemarks', () => {
     expect(entryRemarks({ no_radio: true, remarks: null })).toBe('No radio capability');
     expect(entryRemarks({ no_radio: true, remarks: ' Relayed by phone ' })).toBe('No radio capability · Relayed by phone');
   });
-  it('leaves remarks alone without the flag or when the note is already written', () => {
+  it('keeps the note alongside any remark, whatever it says', () => {
+    expect(entryRemarks({ no_radio: true, remarks: 'no radio capability, used SMS' })).toBe('No radio capability · no radio capability, used SMS');
+  });
+  it('leaves remarks alone without the flag', () => {
     expect(entryRemarks({ no_radio: false, remarks: 'Flooded' })).toBe('Flooded');
     expect(entryRemarks({ no_radio: false, remarks: null })).toBe('');
-    expect(entryRemarks({ no_radio: true, remarks: 'no radio capability, used SMS' })).toBe('no radio capability, used SMS');
   });
 });

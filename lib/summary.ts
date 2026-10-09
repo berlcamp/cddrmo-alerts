@@ -103,9 +103,9 @@ export function describeSummary(s: ReportSummary): string {
 
 export const NO_RADIO_REMARK = 'No radio capability';
 
-/** An entry's remarks with the automatic "No radio capability" note first, for plain-text outputs. */
+/** An entry's remarks, always led by the "No radio capability" note when flagged, for plain-text outputs. */
 export function entryRemarks(entry: Pick<ReportEntry, 'no_radio' | 'remarks'>): string {
   const remarks = entry.remarks?.trim() ?? '';
-  if (!entry.no_radio || remarks.toLowerCase().includes(NO_RADIO_REMARK.toLowerCase())) return remarks;
+  if (!entry.no_radio) return remarks;
   return remarks ? `${NO_RADIO_REMARK} · ${remarks}` : NO_RADIO_REMARK;
 }

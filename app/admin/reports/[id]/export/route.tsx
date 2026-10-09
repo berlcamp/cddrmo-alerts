@@ -8,7 +8,7 @@ import { fetchReportBundle } from '@/lib/data/report-bundle';
 import { formatMilitaryTime, formatReportDate, manilaDayKey } from '@/lib/format';
 import { isUuid } from '@/lib/ids';
 import { makeOptionLabeler } from '@/lib/labels';
-import { entryRemarks, NO_RADIO_REMARK, NONE, summarizeReport } from '@/lib/summary';
+import { entryRemarks, NONE, summarizeReport } from '@/lib/summary';
 import { createClient } from '@/lib/supabase/server';
 import type { ReportEntry } from '@/lib/types';
 
@@ -144,7 +144,7 @@ function EntryRow({ entry, no, label }: { entry: ReportEntry; no: number; label:
   const box = (checked: boolean) => <Box checked={!missing && checked} missing={missing} />;
   const weather = missing ? '' : label(entry.weather_option_id);
   const wind = missing ? '' : label(entry.wind_option_id);
-  const remarks = missing ? (entry.no_radio ? `No response · ${NO_RADIO_REMARK}` : 'No response') : entryRemarks(entry);
+  const remarks = missing ? ['No response', entryRemarks(entry)].filter(Boolean).join(' · ') : entryRemarks(entry);
   return (
     <div style={{ display: 'flex', height: ROW, borderBottom: LINE, background: bg }}>
       <Cell width={C.no} size={14}>{no}</Cell>

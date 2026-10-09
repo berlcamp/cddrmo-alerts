@@ -2,6 +2,7 @@ import { CircleX, RadioOff, type LucideIcon } from 'lucide-react';
 import { valueTone } from '@/lib/labels';
 import { NO_RADIO_REMARK } from '@/lib/summary';
 import type { Level, Power, ReportEntry, Road } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { StatusBadge } from './status-badge';
 
 export function StatusItem({ label, icon, value, text }: { label: string; icon?: LucideIcon; value: Road | Level | Power | null; text: string }) {
@@ -25,18 +26,16 @@ export function NoResponseLabel() {
 /** Barangay remarks, led by the automatic "No radio capability" note when the barangay has no radio. */
 export function EntryRemarks({ entry, className }: { entry: Pick<ReportEntry, 'no_radio' | 'remarks'>; className?: string }) {
   const remarks = entry.remarks?.trim();
-  const note = entry.no_radio && !remarks?.toLowerCase().includes(NO_RADIO_REMARK.toLowerCase());
-  if (!note && !remarks) return null;
+  if (!entry.no_radio && !remarks) return null;
   return (
-    <p className={className}>
-      {note && (
-        <span className="inline-flex items-center gap-1 font-bold">
+    <div className={cn('space-y-0.5', className)}>
+      {entry.no_radio && (
+        <p className="flex items-center gap-1 font-bold">
           <RadioOff className="size-3.5 shrink-0" aria-hidden />
           {NO_RADIO_REMARK}
-        </span>
+        </p>
       )}
-      {note && remarks && <span aria-hidden> · </span>}
-      {remarks}
-    </p>
+      {remarks && <p>{remarks}</p>}
+    </div>
   );
 }
