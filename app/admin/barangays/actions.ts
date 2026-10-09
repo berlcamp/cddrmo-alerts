@@ -22,6 +22,7 @@ export async function saveBarangay(_prev: ActionResult | null, formData: FormDat
     callsign: formData.get('callsign'),
     zone_id: formData.get('zone_id'),
     monitors_coastal: formData.get('monitors_coastal') === 'on',
+    no_radio: formData.get('no_radio') === 'on',
     is_active: formData.get('is_active') === 'on',
     latitude: formData.get('latitude') ?? '',
     longitude: formData.get('longitude') ?? '',

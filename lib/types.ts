@@ -18,6 +18,7 @@ export interface Barangay {
   zone_id: string;
   sort_order: number;
   monitors_coastal: boolean;
+  no_radio: boolean;
   is_active: boolean;
   latitude: number | null;
   longitude: number | null;
@@ -83,6 +84,7 @@ export interface ReportEntry {
   zone_sort: number;
   sort_order: number;
   monitors_coastal: boolean;
+  no_radio: boolean;
   responded: boolean;
   weather_option_id: string | null;
   wind_option_id: string | null;

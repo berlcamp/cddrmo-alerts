@@ -22,6 +22,7 @@ const entrySchema = z.object({
   zone_sort: z.number(),
   sort_order: z.number(),
   monitors_coastal: z.boolean(),
+  no_radio: z.boolean().default(false),
   responded: z.boolean(),
   weather_option_id: id.nullable(),
   wind_option_id: id.nullable(),

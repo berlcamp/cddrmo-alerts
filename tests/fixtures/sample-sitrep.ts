@@ -66,6 +66,7 @@ export function makeEntry(no: number, name: string, callsign: string, zone: stri
     zone_sort: ZONE_SORT[zone],
     sort_order: no,
     monitors_coastal: zone === 'Coastal',
+    no_radio: false,
     responded: false,
     weather_option_id: null,
     wind_option_id: null,

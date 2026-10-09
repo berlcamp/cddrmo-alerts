@@ -156,7 +156,10 @@ export function RollCallTable({ entries, states, flashIds, weatherOptions, windO
                   >
                     <th scope="row" className={cn('sticky left-0 z-10 py-1.5 pr-2 pl-3 text-left font-normal', missing ? 'bg-danger-soft' : 'bg-card')}>
                       <span className="block font-bold whitespace-nowrap">{entry.barangay_name}</span>
-                      <span className="block text-xs whitespace-nowrap text-muted-foreground">{entry.callsign}</span>
+                      <span className="block text-xs whitespace-nowrap text-muted-foreground">
+                        {entry.callsign}
+                        {entry.no_radio && <> · <span className="font-bold">No radio capability</span></>}
+                      </span>
                     </th>
                     <td className="px-1.5 py-1.5">
                       <div role="group" aria-label={`Responded – ${name}`} className="inline-flex overflow-hidden rounded-md border">
