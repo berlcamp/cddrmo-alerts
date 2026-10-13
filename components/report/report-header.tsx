@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import type { Settings } from '@/lib/types';
+import { PopupImage } from './popup-image';
 import { WeatherAdvisory } from './weather-advisory';
 
 export function ReportHeader({ settings }: { settings: Settings }) {
@@ -28,6 +29,7 @@ export function ReportHeader({ settings }: { settings: Settings }) {
         </div>
       </header>
       <WeatherAdvisory settings={settings} />
+      {settings.popup_image_url && <PopupImage key={settings.popup_image_url} src={settings.popup_image_url} alt={settings.popup_image_alt} />}
     </>
   );
 }

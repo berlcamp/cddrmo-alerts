@@ -10,4 +10,6 @@ export const DEFAULT_SETTINGS: Settings = {
   logo_urls: [],
   weather_advisory: '',
   weather_advisory_updated_at: null,
+  popup_image_url: null,
+  popup_image_alt: '',
 };

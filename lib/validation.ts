@@ -93,6 +93,8 @@ export const advisorySchema = z.object({
   weather_advisory: z.string().trim().max(ADVISORY_MAX, `Keep the advisory under ${ADVISORY_MAX} characters.`),
 });
 
+export const POPUP_ALT_MAX = 200;
+
 export const settingsSchema = z.object({
   office_title: z.string().trim().min(1).max(120),
   office_lines: z.array(z.string().trim().min(1).max(160)).max(5),

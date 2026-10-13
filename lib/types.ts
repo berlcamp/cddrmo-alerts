@@ -61,6 +61,9 @@ export interface Settings {
   /** Shown under the header on the public pages; empty means no advisory. */
   weather_advisory: string;
   weather_advisory_updated_at: string | null;
+  /** Opened in a modal on the public pages a few seconds after load; null means no pop-up. */
+  popup_image_url: string | null;
+  popup_image_alt: string;
 }
 
 export interface StaffUser {

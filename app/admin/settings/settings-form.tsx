@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { ActionResult } from '@/lib/action-result';
 import type { Settings } from '@/lib/types';
-import { removeLogo, saveSettings, uploadLogo } from './actions';
+import { POPUP_ALT_MAX } from '@/lib/validation';
+import { removePopupImage, savePopupImage, saveSettings } from './actions';
 
 export function SettingsForm({ settings }: { settings: Settings }) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(async (prev, formData) => {
@@ -17,9 +18,9 @@ export function SettingsForm({ settings }: { settings: Settings }) {
     if (result.ok) toast.success('Settings saved');
     return result;
   }, null);
-  const [logoState, logoAction, uploading] = useActionState<ActionResult | null, FormData>(async (prev, formData) => {
-    const result = await uploadLogo(prev, formData);
-    if (result.ok) toast.success('Logo added');
+  const [popupState, popupAction, uploading] = useActionState<ActionResult | null, FormData>(async (prev, formData) => {
+    const result = await savePopupImage(prev, formData);
+    if (result.ok) toast.success('Pop-up image saved');
     return result;
   }, null);
   const [removing, startTransition] = useTransition();
@@ -56,42 +57,49 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </div>
       </form>
 
-      <section aria-labelledby="logos-heading" className="space-y-4 rounded-xl border bg-card p-4">
-        <h2 id="logos-heading" className="text-lg font-bold">Logos</h2>
-        <p className="text-sm text-muted-foreground">Shown in the public header, left to right. PNG, JPG or WebP, up to 500 KB, maximum 4.</p>
-        <ul className="flex flex-wrap gap-4">
-          {settings.logo_urls.map((url) => (
-            <li key={url} className="flex flex-col items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote logo from the public storage bucket */}
-              <img src={url} alt="Logo" width={64} height={64} className="size-16 rounded-full border bg-white object-contain" />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-11 cursor-pointer text-danger"
-                disabled={removing}
-                onClick={() =>
-                  startTransition(async () => {
-                    try {
-                      const result = await removeLogo(url);
-                      if (!result.ok) toast.error(result.message);
-                    } catch {
-                      toast.error("Couldn't remove the logo. Check your connection and try again.");
-                    }
-                  })
-                }
-              >
-                <Trash2 aria-hidden /> Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <form action={logoAction} className="flex flex-wrap items-end gap-3">
-          <FormField label="Add a logo" htmlFor="logo">
-            <Input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" required className="h-11" />
+      <section aria-labelledby="popup-heading" className="space-y-4 rounded-xl border bg-card p-4">
+        <div>
+          <h2 id="popup-heading" className="text-lg font-bold">Pop-up image</h2>
+          <p className="text-sm text-muted-foreground">Opens in a pop-up on the public pages about 3 seconds after each visit or reload. PNG, JPG or WebP, up to 2 MB.</p>
+        </div>
+        {settings.popup_image_url ? (
+          <div className="flex flex-wrap items-start gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote image from the public storage bucket */}
+            <img src={settings.popup_image_url} alt={settings.popup_image_alt || 'Current pop-up image'} className="max-h-48 w-auto rounded-lg border bg-muted object-contain" />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 cursor-pointer text-danger hover:text-danger"
+              disabled={removing}
+              onClick={() =>
+                startTransition(async () => {
+                  try {
+                    const result = await removePopupImage();
+                    if (result.ok) toast.success('Pop-up image removed');
+                    else toast.error(result.message);
+                  } catch {
+                    toast.error("Couldn't remove the image. Check your connection and try again.");
+                  }
+                })
+              }
+            >
+              <Trash2 aria-hidden /> {removing ? 'Removing…' : 'Remove pop-up'}
+            </Button>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">No pop-up image. Visitors see no pop-up.</p>
+        )}
+        <form key={settings.popup_image_url ?? 'none'} action={popupAction} className="grid gap-4 sm:grid-cols-2">
+          <FormField label={settings.popup_image_url ? 'Replace image' : 'Image'} htmlFor="popup_image">
+            <Input id="popup_image" name="popup_image" type="file" accept="image/png,image/jpeg,image/webp" required={!settings.popup_image_url} className="h-11" />
           </FormField>
-          <Button type="submit" disabled={uploading} className="h-11 cursor-pointer"><Upload aria-hidden /> {uploading ? 'Uploading…' : 'Upload'}</Button>
-          {logoState && !logoState.ok && <p role="alert" className="w-full text-sm font-bold text-danger">{logoState.message}</p>}
+          <FormField label="Description" htmlFor="popup_image_alt" hint="What the image says, for screen readers and if it fails to load.">
+            <Input id="popup_image_alt" name="popup_image_alt" maxLength={POPUP_ALT_MAX} defaultValue={settings.popup_image_alt} className="h-11" />
+          </FormField>
+          {popupState && !popupState.ok && <p role="alert" className="text-sm font-bold text-danger sm:col-span-2">{popupState.message}</p>}
+          <div className="sm:col-span-2">
+            <Button type="submit" disabled={uploading} className="h-11 cursor-pointer"><Upload aria-hidden /> {uploading ? 'Saving…' : 'Save pop-up'}</Button>
+          </div>
         </form>
       </section>
     </div>
