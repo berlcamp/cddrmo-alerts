@@ -56,7 +56,7 @@ function Segmented<T extends string>({ label, value, options, onChange, dim }: {
             onClick={() => onChange(selected ? null : option.value)}
             className={cn(
               CONTROL,
-              'cursor-pointer px-2.5 text-xs font-bold whitespace-nowrap transition-colors duration-150 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+              'cursor-pointer px-2 text-xs font-bold whitespace-nowrap transition-colors duration-150 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
               i > 0 && 'border-l',
               selected ? SELECTED[option.tone] : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
@@ -134,7 +134,7 @@ export function RollCallTable({ entries, attendanceDay, states, flashIds, weathe
           <thead className="bg-muted text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
             <tr>
               {COLUMNS.map((col, i) => (
-                <th key={col} scope="col" className={cn('px-2 py-2 whitespace-nowrap', i === 0 && 'sticky left-0 z-10 bg-muted pl-3')}>{col}</th>
+                <th key={col} scope="col" className={cn('px-1 py-2 leading-tight', i === 0 && 'sticky left-0 z-10 bg-muted pl-3')}>{col}</th>
               ))}
               <th scope="col" className="w-8 px-2 py-2"><span className="sr-only">Save status</span></th>
             </tr>
@@ -164,14 +164,14 @@ export function RollCallTable({ entries, attendanceDay, states, flashIds, weathe
                         {entry.no_radio && <> · <span className="font-bold">No radio capability</span></>}
                       </span>
                     </th>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <div role="group" aria-label={`Responded – ${name}`} className="inline-flex overflow-hidden rounded-md border">
                         <button
                           type="button"
                           aria-pressed={!missing}
                           title="Responded – fills in all normal"
                           onClick={() => missing && patch(allNormalPatch(entry))}
-                          className={cn(CONTROL, 'cursor-pointer px-2.5 text-xs font-bold transition-colors duration-150', !missing ? SELECTED.ok : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground')}
+                          className={cn(CONTROL, 'cursor-pointer px-2 text-xs font-bold transition-colors duration-150', !missing ? SELECTED.ok : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground')}
                         >
                           Yes
                         </button>
@@ -180,25 +180,25 @@ export function RollCallTable({ entries, attendanceDay, states, flashIds, weathe
                           aria-pressed={missing}
                           title="No response – clears this row"
                           onClick={() => !missing && patch(noResponsePatch())}
-                          className={cn(CONTROL, 'cursor-pointer border-l px-2.5 text-xs font-bold transition-colors duration-150', missing ? SELECTED.danger : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground')}
+                          className={cn(CONTROL, 'cursor-pointer border-l px-2 text-xs font-bold transition-colors duration-150', missing ? SELECTED.danger : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground')}
                         >
                           No
                         </button>
                       </div>
                     </td>
-                    <td className="px-1.5 py-1.5">
-                      <OptionSelect label={`Weather – ${name}`} value={entry.weather_option_id} options={weatherOptions} dim={missing} className="min-w-36" onChange={(v) => patch(conditionPatch('weather_option_id', v))} />
+                    <td className="px-1 py-1.5">
+                      <OptionSelect label={`Weather – ${name}`} value={entry.weather_option_id} options={weatherOptions} dim={missing} className="min-w-32" onChange={(v) => patch(conditionPatch('weather_option_id', v))} />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <OptionSelect label={`Wind – ${name}`} value={entry.wind_option_id} options={windOptions} dim={missing} className="min-w-28" onChange={(v) => patch(conditionPatch('wind_option_id', v))} />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <Segmented label={`Road – ${name}`} value={entry.road} options={ROAD} dim={missing} onChange={(v) => patch(conditionPatch('road', v))} />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <Segmented label={`River / canal – ${name}`} value={entry.river} options={LEVEL} dim={missing} onChange={(v) => patch(conditionPatch('river', v))} />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       {entry.monitors_coastal ? (
                         <Segmented label={`Coastal – ${name}`} value={entry.coastal} options={LEVEL} dim={missing} onChange={(v) => patch(conditionPatch('coastal', v))} />
                       ) : (
@@ -207,10 +207,10 @@ export function RollCallTable({ entries, attendanceDay, states, flashIds, weathe
                         </span>
                       )}
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <Segmented label={`Power – ${name}`} value={entry.power} options={POWER} dim={missing} onChange={(v) => patch(conditionPatch('power', v))} />
                     </td>
-                    <td className="min-w-36 px-1.5 py-1.5">
+                    <td className="min-w-32 px-1 py-1.5">
                       <BlurInput
                         aria-label={`Remarks – ${name}`}
                         data-remarks-index={rowIndex}
@@ -227,10 +227,10 @@ export function RollCallTable({ entries, attendanceDay, states, flashIds, weathe
                         className={cn(CONTROL, 'bg-card md:text-sm')}
                       />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <OperatorAttendanceDialog barangayId={entry.barangay_id} barangayName={entry.barangay_name} day={attendanceDay} className={CONTROL} />
                     </td>
-                    <td className="px-1.5 py-1.5">
+                    <td className="px-1 py-1.5">
                       <span className="flex size-4 items-center justify-center"><SaveIcon state={state} /></span>
                     </td>
                   </tr>,

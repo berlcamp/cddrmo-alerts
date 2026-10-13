@@ -63,7 +63,7 @@ export function OperatorAttendanceDialog({ barangayId, barangayName, day, classN
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger
-        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'cursor-pointer whitespace-nowrap', className)}
+        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'cursor-pointer gap-1 px-2 whitespace-nowrap', className)}
         aria-label={`Radio operators – ${barangayName}`}
       >
         <RadioTower aria-hidden /> Radio Operator
