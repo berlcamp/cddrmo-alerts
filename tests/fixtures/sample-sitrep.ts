@@ -5,7 +5,7 @@ function opt(id: string, kind: 'weather' | 'wind', label: string, severity: numb
 }
 
 export const OPTIONS: ConditionOption[] = [
-  opt('w-sunny', 'weather', 'Sunny', 0),
+  opt('w-sunny', 'weather', 'Fair', 0),
   opt('w-cloudy', 'weather', 'Cloudy', 1),
   opt('w-light', 'weather', 'Light rain', 2),
   opt('w-moderate', 'weather', 'Moderate rain', 3),

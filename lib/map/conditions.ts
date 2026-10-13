@@ -18,7 +18,7 @@ export interface ConditionLook extends Swatch {
 
 // Calm → severe. Each fill keeps at least 3:1 contrast with its icon colour.
 export const WEATHER_SCALE: Swatch[] = [
-  { bg: '#fbbf24', fg: '#422006', border: '#b45309' }, // sunny
+  { bg: '#fbbf24', fg: '#422006', border: '#b45309' }, // fair
   { bg: '#64748b', fg: '#ffffff', border: '#334155' }, // cloudy
   { bg: '#0284c7', fg: '#ffffff', border: '#075985' }, // light rain
   { bg: '#1d4ed8', fg: '#ffffff', border: '#1e3a8a' }, // moderate rain

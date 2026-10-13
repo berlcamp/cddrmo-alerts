@@ -65,7 +65,7 @@ describe('summarizeCondition', () => {
   });
   it('falls back to the full range when no label reaches 20%', () => {
     const six = ['w-sunny', 'w-cloudy', 'w-light', 'w-moderate', 'w-heavy', 'w-torrential'];
-    expect(summarizeCondition(six, OPTIONS)).toBe('Sunny to Torrential rain');
+    expect(summarizeCondition(six, OPTIONS)).toBe('Fair to Torrential rain');
   });
   it('ignores nulls and unknown ids', () => {
     expect(summarizeCondition([null, 'nope'], OPTIONS)).toBe(NONE);
