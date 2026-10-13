@@ -32,6 +32,11 @@ describe('makeConditionLooker', () => {
     expect(look('strong')).toMatchObject({ kind: 'wind', level: 3, bg: WIND_SCALE[3].bg });
   });
 
+  it('marks looks as night only when asked', () => {
+    expect(look('sunny')).toMatchObject({ night: false });
+    expect(makeConditionLooker([option('sunny', 'weather', 0)], { night: true })('sunny')).toMatchObject({ night: true });
+  });
+
   it('returns null for missing or unknown ids', () => {
     expect(look(null)).toBeNull();
     expect(look('nope')).toBeNull();

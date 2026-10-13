@@ -1,16 +1,16 @@
-import { Cloud, CloudDrizzle, CloudLightning, CloudRain, CloudRainWind, Minus, Sun, Wind } from 'lucide-react';
+import { Cloud, CloudDrizzle, CloudLightning, CloudRain, CloudRainWind, Minus, Moon, Sun, Wind } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ConditionLook, Swatch } from '@/lib/map/conditions';
 import { cn } from '@/lib/utils';
 
-/** The icon for a weather or wind look: weather icons step up with severity, wind always uses the wind icon. */
+/** The icon for a weather or wind look: weather icons step up with severity (sun, or moon at night), wind always uses the wind icon. */
 export function ConditionGlyph({ look, className }: { look: ConditionLook | null; className?: string }) {
   const props = { className, strokeWidth: 2.25, 'aria-hidden': true } as const;
   if (!look) return <Minus {...props} />;
   if (look.kind === 'wind') return <Wind {...props} />;
   switch (look.level) {
     case 0:
-      return <Sun {...props} />;
+      return look.night ? <Moon {...props} /> : <Sun {...props} />;
     case 1:
       return <Cloud {...props} />;
     case 2:

@@ -12,6 +12,8 @@ export interface ConditionLook extends Swatch {
   label: string;
   /** Position on the kind's scale: 0..WEATHER_SCALE.length-1 or 0..WIND_SCALE.length-1. */
   level: number;
+  /** The report was taken at night: the calmest weather shows a moon instead of a sun. */
+  night: boolean;
 }
 
 // Calm → severe. Each fill keeps at least 3:1 contrast with its icon colour.
@@ -46,14 +48,14 @@ export function scaleLevel(severity: number, maxSeverity: number, steps: number)
   return Math.max(0, Math.min(level, steps - 1));
 }
 
-export function makeConditionLooker(options: ConditionOption[]): (id: string | null) => ConditionLook | null {
+export function makeConditionLooker(options: ConditionOption[], { night = false }: { night?: boolean } = {}): (id: string | null) => ConditionLook | null {
   const maxSeverity: Record<ConditionKind, number> = { weather: 0, wind: 0 };
   for (const o of options) maxSeverity[o.kind] = Math.max(maxSeverity[o.kind], o.severity);
   const looks = new Map<string, ConditionLook>(
     options.map((o) => {
       const scale = SCALES[o.kind];
       const level = scaleLevel(o.severity, maxSeverity[o.kind], scale.length);
-      return [o.id, { kind: o.kind, label: o.label, level, ...scale[level] }];
+      return [o.id, { kind: o.kind, label: o.label, level, night, ...scale[level] }];
     }),
   );
   return (id) => (id ? looks.get(id) ?? null : null);

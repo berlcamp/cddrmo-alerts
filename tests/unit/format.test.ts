@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatClock, formatDayHeading, formatMilitaryTime, formatReportDate, formatReportHeading,
-  formatShortHeading, fromManilaInputValue, manilaDayKey, toManilaInputValue,
+  formatShortHeading, fromManilaInputValue, isManilaNight, manilaDayKey, toManilaInputValue,
 } from '@/lib/format';
 
 const AT_1050 = '2026-10-07T02:50:00.000Z'; // 10:50 in Manila
@@ -31,6 +31,15 @@ describe('Manila formatting', () => {
     expect(fromManilaInputValue('2026-10-07T10:50')).toBe(AT_1050);
     expect(() => fromManilaInputValue('10:50')).toThrow('Invalid date/time');
     expect(() => fromManilaInputValue('2026-13-45T99:99')).toThrow('Invalid date/time');
+  });
+
+  it('treats 18:00 to 05:59 Manila time as night', () => {
+    expect(isManilaNight(AT_1050)).toBe(false);
+    expect(isManilaNight('2026-10-07T09:59:00.000Z')).toBe(false); // 17:59
+    expect(isManilaNight('2026-10-07T10:00:00.000Z')).toBe(true); // 18:00
+    expect(isManilaNight('2026-10-06T16:05:00.000Z')).toBe(true); // 00:05
+    expect(isManilaNight('2026-10-06T21:59:00.000Z')).toBe(true); // 05:59
+    expect(isManilaNight('2026-10-06T22:00:00.000Z')).toBe(false); // 06:00
   });
 
   it('accepts Postgres timestamps with microseconds and offsets', () => {

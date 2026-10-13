@@ -32,6 +32,12 @@ export function formatClock(iso: string): string {
   return `${p.hour}:${p.minute}:${p.second}`;
 }
 
+/** Evening or night in Manila (18:00 to 05:59), when the weather's calmest icon is a moon instead of a sun. */
+export function isManilaNight(iso: string): boolean {
+  const hour = Number(parts(timeFmt, iso).hour);
+  return hour >= 18 || hour < 6;
+}
+
 export function manilaDayKey(iso: string): string {
   const p = parts(dayKeyFmt, iso);
   return `${p.year}-${p.month}-${p.day}`;

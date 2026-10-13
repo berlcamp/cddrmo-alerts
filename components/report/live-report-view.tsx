@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useLiveReport } from '@/hooks/use-live-report';
 import { useNewerReport } from '@/hooks/use-newer-report';
 import { filterEntries, groupByZone, zoneNames } from '@/lib/filter';
-import { formatReportHeading, formatShortHeading } from '@/lib/format';
+import { formatReportHeading, formatShortHeading, isManilaNight } from '@/lib/format';
 import { makeOptionLabeler } from '@/lib/labels';
 import { makeConditionLooker } from '@/lib/map/conditions';
 import { summarizeReport } from '@/lib/summary';
@@ -38,7 +38,8 @@ export function LiveReportView({ initial, options, settings, locations, isLatest
 
   const summary = useMemo(() => summarizeReport(live.report, live.entries, options), [live.report, live.entries, options]);
   const optionLabel = useMemo(() => makeOptionLabeler(options), [options]);
-  const look = useMemo(() => makeConditionLooker(options), [options]);
+  const night = isManilaNight(live.report.report_at);
+  const look = useMemo(() => makeConditionLooker(options, { night }), [options, night]);
   const zones = useMemo(() => zoneNames(live.entries), [live.entries]);
   const numbers = useMemo(() => new Map(live.entries.map((e, i) => [e.id, i + 1])), [live.entries]);
   const groups = useMemo(() => groupByZone(filterEntries(live.entries, zone, issuesOnly)), [live.entries, zone, issuesOnly]);
