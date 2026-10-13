@@ -7,7 +7,7 @@ import { isUuid } from '@/lib/ids';
 import { reorderGroup } from '@/lib/reorder';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
-import { optionSchema, zoneSchema } from '@/lib/validation';
+import { advisorySchema, optionSchema, zoneSchema } from '@/lib/validation';
 import type { ConditionKind } from '@/lib/types';
 
 const NOT_ALLOWED = 'Your session has expired. Sign in again.';
@@ -51,6 +51,40 @@ export async function saveOption(_prev: ActionResult | null, formData: FormData)
   }
   if (error) return fail(error.code === '23505' ? 'That label already exists.' : `Could not save: ${error.message}`);
   revalidatePath('/admin/options');
+  return ok(null);
+}
+
+/** Deletes an option no report uses; options already on reports must be deactivated so those reports keep their labels. */
+export async function deleteOption(id: string): Promise<ActionResult> {
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
+  if (!isUuid(id)) return fail('Unknown option.');
+  const db = cdrrmo(await createClient());
+  const { count, error: countError } = await db
+    .from('report_entries')
+    .select('id', { count: 'exact', head: true })
+    .or(`weather_option_id.eq.${id},wind_option_id.eq.${id}`);
+  if (countError) return fail(`Could not check the reports: ${countError.message}`, true);
+  if (count) {
+    const rows = count === 1 ? '1 report row' : `${count} report rows`;
+    return fail(`It is used in ${rows}. Set it to Inactive instead so those reports keep it.`);
+  }
+  const { error } = await db.from('condition_options').delete().eq('id', id);
+  if (error) return fail(`Could not delete: ${error.message}`, true);
+  revalidatePath('/', 'layout');
+  return ok(null);
+}
+
+export async function saveAdvisory(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
+  const parsed = advisorySchema.safeParse({ weather_advisory: String(formData.get('weather_advisory') ?? '').replace(/\r\n/g, '\n') });
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Check the form.');
+  const { weather_advisory } = parsed.data;
+  const { error } = await cdrrmo(await createClient())
+    .from('settings')
+    .update({ weather_advisory, weather_advisory_updated_at: weather_advisory ? new Date().toISOString() : null })
+    .eq('id', 1);
+  if (error) return fail(`Could not save: ${error.message}`, true);
+  revalidatePath('/', 'layout');
   return ok(null);
 }
 

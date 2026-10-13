@@ -58,6 +58,9 @@ export interface Settings {
   radio_frequency: string;
   report_title: string;
   logo_urls: string[];
+  /** Shown under the header on the public pages; empty means no advisory. */
+  weather_advisory: string;
+  weather_advisory_updated_at: string | null;
 }
 
 export interface StaffUser {

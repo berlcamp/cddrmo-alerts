@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barangaySchema, entryPatchSchema, newReportSchema, reportPatchSchema, staffSchema, zoneSchema } from '@/lib/validation';
+import { ADVISORY_MAX, advisorySchema, barangaySchema, entryPatchSchema, newReportSchema, reportPatchSchema, staffSchema, zoneSchema } from '@/lib/validation';
 
 const UUID = '3f2b6a0e-9c1d-4e5f-8a7b-1c2d3e4f5a6b';
 
@@ -61,5 +61,16 @@ describe('zoneSchema', () => {
     expect(zoneSchema.safeParse({ name: '  Zone 4 ' }).data).toEqual({ name: 'Zone 4' });
     expect(zoneSchema.safeParse({ name: '   ' }).success).toBe(false);
     expect(zoneSchema.safeParse({ name: 'x'.repeat(61) }).success).toBe(false);
+  });
+});
+
+describe('advisorySchema', () => {
+  it('trims the text and allows a blank advisory to clear it', () => {
+    expect(advisorySchema.parse({ weather_advisory: '  Signal no. 1 raised.\n' })).toEqual({ weather_advisory: 'Signal no. 1 raised.' });
+    expect(advisorySchema.parse({ weather_advisory: '   ' })).toEqual({ weather_advisory: '' });
+  });
+
+  it('rejects an advisory over the limit', () => {
+    expect(advisorySchema.safeParse({ weather_advisory: 'x'.repeat(ADVISORY_MAX + 1) }).success).toBe(false);
   });
 });

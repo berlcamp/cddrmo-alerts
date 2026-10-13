@@ -8,4 +8,6 @@ export const DEFAULT_SETTINGS: Settings = {
   radio_frequency: '148.710',
   report_title: 'Barangay Weather SitRep',
   logo_urls: [],
+  weather_advisory: '',
+  weather_advisory_updated_at: null,
 };

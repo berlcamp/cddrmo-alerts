@@ -1,8 +1,8 @@
 'use client';
 
-import { Map as MapIcon, Pencil, Plus, Wind, CloudSun, type LucideIcon } from 'lucide-react';
+import { Map as MapIcon, Pencil, Plus, Trash2, TriangleAlert, Wind, CloudSun, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { CheckCard, RowTag, SectionHeader } from '@/components/admin/parts';
 import { SortableList } from '@/components/admin/sortable-list';
@@ -11,11 +11,14 @@ import { ConditionDot } from '@/components/report/condition-icon';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import type { ActionResult } from '@/lib/action-result';
 import { makeConditionLooker } from '@/lib/map/conditions';
-import type { ConditionKind, ConditionOption, Zone } from '@/lib/types';
+import { formatShortHeading } from '@/lib/format';
+import type { ConditionKind, ConditionOption, Settings, Zone } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { reorderOptions, reorderZones, saveOption, saveZone } from './actions';
+import { ADVISORY_MAX } from '@/lib/validation';
+import { deleteOption, reorderOptions, reorderZones, saveAdvisory, saveOption, saveZone } from './actions';
 
 export type OptionsTab = 'zones' | ConditionKind;
 
@@ -121,6 +124,76 @@ function OptionDialog({ kind, option }: { kind: ConditionKind; option?: Conditio
   );
 }
 
+function DeleteOptionDialog({ option }: { option: ConditionOption }) {
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const remove = () =>
+    startTransition(async () => {
+      try {
+        const result = await deleteOption(option.id);
+        if (!result.ok) return void toast.error(result.message);
+        setOpen(false);
+        toast.success(`${option.label} deleted`);
+      } catch {
+        toast.error("Couldn't delete the option. Check your connection and try again.");
+      }
+    });
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger className={cn(buttonVariants({ variant: 'outline' }), 'h-11 shrink-0 cursor-pointer text-danger hover:text-danger')} aria-label={`Delete ${option.label}`}>
+        <Trash2 aria-hidden /> <span className="hidden sm:inline">Delete</span>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete {option.label}?</DialogTitle>
+          <DialogDescription>Encoders can no longer pick it. An option already used on a report cannot be deleted; set it to Inactive instead.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="destructive" className="h-11 cursor-pointer" disabled={pending} onClick={remove}>
+            {pending ? 'Deleting…' : 'Delete option'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AdvisoryCard({ settings }: { settings: Settings }) {
+  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(async (prev, formData) => {
+    const result = await saveAdvisory(prev, formData);
+    if (result.ok) toast.success(String(formData.get('weather_advisory') ?? '').trim() ? 'Advisory posted' : 'Advisory cleared');
+    return result;
+  }, null);
+  const updatedAt = settings.weather_advisory ? settings.weather_advisory_updated_at : null;
+  return (
+    <section aria-labelledby="advisory-title" className="space-y-3 rounded-xl border bg-card p-4">
+      <div className="flex items-start gap-3">
+        <TriangleAlert className="mt-0.5 size-5 shrink-0 text-warn" aria-hidden />
+        <div>
+          <h2 id="advisory-title" className="text-lg font-bold">Weather advisory</h2>
+          <p className="text-sm text-muted-foreground">
+            Shown under the header on every public page. Leave it blank to hide it.
+            {updatedAt && <> Last posted {formatShortHeading(updatedAt)}.</>}
+          </p>
+        </div>
+      </div>
+      <form action={formAction} className="space-y-3">
+        <label htmlFor="weather_advisory" className="sr-only">Advisory text</label>
+        <Textarea
+          id="weather_advisory"
+          name="weather_advisory"
+          rows={4}
+          maxLength={ADVISORY_MAX}
+          defaultValue={settings.weather_advisory}
+          placeholder="e.g. PAGASA: Tropical Depression signal no. 1 raised over Misamis Occidental. Stay alert."
+        />
+        {state && !state.ok && <p role="alert" className="text-sm font-bold text-danger">{state.message}</p>}
+        <Button type="submit" disabled={pending} className="h-11 cursor-pointer">{pending ? 'Saving…' : 'Save advisory'}</Button>
+      </form>
+    </section>
+  );
+}
+
 function EmptyList({ children }: { children: string }) {
   return <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">{children}</p>;
 }
@@ -181,6 +254,7 @@ function OptionsPanel({ kind, options, allOptions }: { kind: ConditionKind; opti
                 </div>
               </div>
               <OptionDialog kind={kind} option={option} />
+              <DeleteOptionDialog option={option} />
             </>
           )}
         </SortableList>
@@ -189,11 +263,12 @@ function OptionsPanel({ kind, options, allOptions }: { kind: ConditionKind; opti
   );
 }
 
-export function OptionsManager({ tab, zones, barangayCounts, options }: {
+export function OptionsManager({ tab, zones, barangayCounts, options, settings }: {
   tab: OptionsTab;
   zones: Zone[];
   barangayCounts: Record<string, number>;
   options: ConditionOption[];
+  settings: Settings;
 }) {
   const byKind = (kind: ConditionKind) => options.filter((o) => o.kind === kind).sort((a, b) => a.sort_order - b.sort_order);
   const tabs: { id: OptionsTab; label: string; icon: LucideIcon; count: number }[] = [
@@ -229,7 +304,10 @@ export function OptionsManager({ tab, zones, barangayCounts, options }: {
       {tab === 'zones' ? (
         <ZonesPanel zones={zones} barangayCounts={barangayCounts} />
       ) : (
-        <OptionsPanel key={tab} kind={tab} options={byKind(tab)} allOptions={options} />
+        <>
+          {tab === 'weather' && <AdvisoryCard settings={settings} />}
+          <OptionsPanel key={tab} kind={tab} options={byKind(tab)} allOptions={options} />
+        </>
       )}
     </div>
   );
