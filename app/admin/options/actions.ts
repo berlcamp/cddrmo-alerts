@@ -70,9 +70,9 @@ function zoneMessage(error: { code?: string; message: string }): string {
   return error.code === '23505' ? 'A zone with that name already exists.' : `Could not save: ${error.message}`;
 }
 
+// Zone names and order are synced onto existing report rows, so public pages change too.
 function revalidateZones() {
-  revalidatePath('/admin/options');
-  revalidatePath('/admin/barangays');
+  revalidatePath('/', 'layout');
 }
 
 export async function saveZone(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

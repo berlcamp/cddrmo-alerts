@@ -59,7 +59,8 @@ export async function saveBarangay(_prev: ActionResult | null, formData: FormDat
     const { error } = await db.from('barangays').insert({ ...parsed.data, sort_order: ((last as { sort_order: number } | null)?.sort_order ?? 0) + 1 });
     if (error) return fail(dbMessage(error));
   }
-  revalidatePath('/admin/barangays');
+  // A zone move (and the no-radio flag) also updates existing report rows, so public pages change too.
+  revalidatePath('/', 'layout');
   return ok(null);
 }
 

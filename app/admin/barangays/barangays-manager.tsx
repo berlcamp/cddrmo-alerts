@@ -41,7 +41,7 @@ function BarangayDialog({ zones, barangay }: { zones: Zone[]; barangay?: Baranga
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">{barangay ? `Edit ${barangay.name}` : 'Add a barangay'}</DialogTitle>
-          <DialogDescription>Changes apply to new reports. Existing reports keep what they were created with.</DialogDescription>
+          <DialogDescription>Changes apply to new reports. Moving a barangay to another zone also updates its zone on existing reports.</DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           {barangay && <input type="hidden" name="id" value={barangay.id} />}

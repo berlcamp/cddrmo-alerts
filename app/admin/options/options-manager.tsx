@@ -58,7 +58,7 @@ function ZoneDialog({ zone }: { zone?: Zone }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">{zone ? `Edit ${zone.name}` : 'Add a zone'}</DialogTitle>
-          <DialogDescription>Existing reports keep the zone names they were created with.</DialogDescription>
+          <DialogDescription>The new name also appears on existing reports, including the public pages.</DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           {zone && <input type="hidden" name="id" value={zone.id} />}
@@ -205,7 +205,7 @@ export function OptionsManager({ tab, zones, barangayCounts, options }: {
     <div className="space-y-6">
       <div className="max-w-2xl">
         <h1 className="text-2xl font-bold">Options</h1>
-        <p className="text-muted-foreground">The zones and condition choices used in the roll call. Changes apply to new reports.</p>
+        <p className="text-muted-foreground">The zones and condition choices used in the roll call. Zone names and order also update existing reports.</p>
       </div>
       <nav aria-label="Option lists" className="flex gap-1 overflow-x-auto rounded-xl border bg-muted p-1">
         {tabs.map(({ id, label, icon: Icon, count }) => (
