@@ -8,6 +8,7 @@ import { isUuid } from '@/lib/ids';
 import { IMPORT_LIMIT } from '@/lib/operator-import';
 import { cdrrmo } from '@/lib/supabase/db';
 import { createClient } from '@/lib/supabase/server';
+import type { RadioOperator } from '@/lib/types';
 import { operatorSchema } from '@/lib/validation';
 
 const NOT_ALLOWED = 'Your session has expired. Sign in again.';
@@ -90,6 +91,33 @@ export async function deleteOperator(id: string): Promise<ActionResult> {
   if (error) return fail(`Could not remove: ${error.message}`, true);
   revalidatePath('/admin/radio-operators', 'layout');
   return ok(null);
+}
+
+export type OperatorAttendance = Pick<RadioOperator, 'id' | 'name' | 'callsign' | 'position'> & { present: boolean };
+
+/** A barangay's active operators, in list order, and whether each was marked present on one day. */
+export async function getBarangayAttendance(barangayId: string, day: string): Promise<ActionResult<OperatorAttendance[]>> {
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
+  if (!isUuid(barangayId) || !isDayKey(day)) return fail('Unknown barangay or day.');
+  const db = cdrrmo(await createClient());
+  const { data: operators, error } = await db
+    .from('radio_operators')
+    .select('id, name, callsign, position')
+    .eq('barangay_id', barangayId)
+    .eq('status', 'active')
+    .order('sort_order')
+    .order('name');
+  if (error) return fail(`Could not load radio operators: ${error.message}`, true);
+  const list = (operators ?? []) as Pick<RadioOperator, 'id' | 'name' | 'callsign' | 'position'>[];
+  if (list.length === 0) return ok([]);
+  const { data: marked, error: markedError } = await db
+    .from('operator_attendance')
+    .select('operator_id')
+    .eq('day', day)
+    .in('operator_id', list.map((o) => o.id));
+  if (markedError) return fail(`Could not load attendance: ${markedError.message}`, true);
+  const present = new Set(((marked ?? []) as { operator_id: string }[]).map((m) => m.operator_id));
+  return ok(list.map((o) => ({ ...o, present: present.has(o.id) })));
 }
 
 /** Marks an operator present (row exists) or absent (no row) on one day. */

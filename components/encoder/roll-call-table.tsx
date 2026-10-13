@@ -9,6 +9,7 @@ import type { ConditionOption, Level, Power, ReportEntry, Road } from '@/lib/typ
 import type { EntryPatch } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import { BlurInput } from './blur-input';
+import { OperatorAttendanceDialog } from './operator-attendance-dialog';
 
 type Tone = 'ok' | 'warn' | 'danger';
 
@@ -104,10 +105,12 @@ function SaveIcon({ state }: { state?: SaveState }) {
   return <CircleAlert className="size-4 text-danger" aria-label="Not saved" />;
 }
 
-const COLUMNS = ['Barangay', 'Responded', 'Weather', 'Wind', 'Road', 'River / canal', 'Coastal', 'Power', 'Remarks'];
+const COLUMNS = ['Barangay', 'Responded', 'Weather', 'Wind', 'Road', 'River / canal', 'Coastal', 'Power', 'Remarks', 'Radio operator'];
 
-export function RollCallTable({ entries, states, flashIds, weatherOptions, windOptions, onPatch, onRetry, onDiscard }: {
+export function RollCallTable({ entries, attendanceDay, states, flashIds, weatherOptions, windOptions, onPatch, onRetry, onDiscard }: {
   entries: ReportEntry[];
+  /** YYYY-MM-DD: the day the Radio Operator dialog marks attendance for. */
+  attendanceDay: string;
   states: Record<string, SaveState>;
   flashIds: ReadonlySet<string>;
   weatherOptions: ConditionOption[];
@@ -223,6 +226,9 @@ export function RollCallTable({ entries, states, flashIds, weatherOptions, windO
                         placeholder="Optional"
                         className={cn(CONTROL, 'bg-card md:text-sm')}
                       />
+                    </td>
+                    <td className="px-1.5 py-1.5">
+                      <OperatorAttendanceDialog barangayId={entry.barangay_id} barangayName={entry.barangay_name} day={attendanceDay} className={CONTROL} />
                     </td>
                     <td className="px-1.5 py-1.5">
                       <span className="flex size-4 items-center justify-center"><SaveIcon state={state} /></span>

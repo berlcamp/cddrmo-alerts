@@ -11,7 +11,7 @@ import { useLiveReport } from '@/hooks/use-live-report';
 import { updateEntry } from '@/lib/actions/report-actions';
 import { cn } from '@/lib/utils';
 import { applyPatch } from '@/lib/encoder-patches';
-import { formatShortHeading } from '@/lib/format';
+import { formatShortHeading, manilaDayKey } from '@/lib/format';
 import { summarizeReport, type SummaryOverrides } from '@/lib/summary';
 import type { ConditionOption, ReportBundle } from '@/lib/types';
 import { DeleteReportDialog } from './delete-report-dialog';
@@ -102,6 +102,7 @@ export function EncoderView({ initial, options, shareUrl }: {
       <SummaryStrip summary={summary} />
       <RollCallTable
         entries={entries}
+        attendanceDay={manilaDayKey(live.report.report_at)}
         states={saver.states}
         flashIds={live.flashIds}
         weatherOptions={weatherOptions}
