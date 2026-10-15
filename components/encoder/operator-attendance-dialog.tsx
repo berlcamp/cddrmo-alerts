@@ -91,7 +91,7 @@ export function OperatorAttendanceDialog({ barangayId, barangayName, day, classN
               <Link href="/admin/radio-operators" className="font-bold text-primary underline-offset-4 hover:underline">Manage operators</Link>
             </p>
           ) : (
-            <ul className="divide-y rounded-xl border">
+            <ul className="max-h-[60vh] divide-y overflow-y-auto overscroll-contain rounded-xl border">
               {load.operators.map((o) => (
                 <li key={o.id}>
                   <label className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors duration-150 hover:bg-accent/60">

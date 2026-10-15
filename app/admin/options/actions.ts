@@ -139,3 +139,20 @@ export async function reorderZones(orderedIds: string[]): Promise<ActionResult> 
   revalidateZones();
   return ok(null);
 }
+
+/** Deletes a zone with no barangays; report rows keep their own copy of the zone name. */
+export async function deleteZone(id: string): Promise<ActionResult> {
+  if (!(await getCurrentStaff())) return fail(NOT_ALLOWED);
+  if (!isUuid(id)) return fail('Unknown zone.');
+  const db = cdrrmo(await createClient());
+  const { count, error: countError } = await db.from('barangays').select('id', { count: 'exact', head: true }).eq('zone_id', id);
+  if (countError) return fail(`Could not check the barangays: ${countError.message}`, true);
+  if (count) {
+    const rows = count === 1 ? '1 barangay' : `${count} barangays`;
+    return fail(`It still has ${rows}. Move them to another zone first.`);
+  }
+  const { error } = await db.from('zones').delete().eq('id', id);
+  if (error) return fail(`Could not delete: ${error.message}`, true);
+  revalidateZones();
+  return ok(null);
+}

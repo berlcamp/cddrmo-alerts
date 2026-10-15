@@ -18,7 +18,7 @@ import { formatShortHeading } from '@/lib/format';
 import type { ConditionKind, ConditionOption, Settings, Zone } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ADVISORY_MAX } from '@/lib/validation';
-import { deleteOption, reorderOptions, reorderZones, saveAdvisory, saveOption, saveZone } from './actions';
+import { deleteOption, deleteZone, reorderOptions, reorderZones, saveAdvisory, saveOption, saveZone } from './actions';
 
 export type OptionsTab = 'zones' | ConditionKind;
 
@@ -124,33 +124,33 @@ function OptionDialog({ kind, option }: { kind: ConditionKind; option?: Conditio
   );
 }
 
-function DeleteOptionDialog({ option }: { option: ConditionOption }) {
+function DeleteDialog({ label, noun, description, onDelete }: { label: string; noun: string; description: string; onDelete: () => Promise<ActionResult> }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const remove = () =>
     startTransition(async () => {
       try {
-        const result = await deleteOption(option.id);
+        const result = await onDelete();
         if (!result.ok) return void toast.error(result.message);
         setOpen(false);
-        toast.success(`${option.label} deleted`);
+        toast.success(`${label} deleted`);
       } catch {
-        toast.error("Couldn't delete the option. Check your connection and try again.");
+        toast.error(`Couldn't delete the ${noun}. Check your connection and try again.`);
       }
     });
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={cn(buttonVariants({ variant: 'outline' }), 'h-11 shrink-0 cursor-pointer text-danger hover:text-danger')} aria-label={`Delete ${option.label}`}>
+      <DialogTrigger className={cn(buttonVariants({ variant: 'outline' }), 'h-11 shrink-0 cursor-pointer text-danger hover:text-danger')} aria-label={`Delete ${label}`}>
         <Trash2 aria-hidden /> <span className="hidden sm:inline">Delete</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete {option.label}?</DialogTitle>
-          <DialogDescription>Encoders can no longer pick it. An option already used on a report cannot be deleted; set it to Inactive instead.</DialogDescription>
+          <DialogTitle>Delete {label}?</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="destructive" className="h-11 cursor-pointer" disabled={pending} onClick={remove}>
-            {pending ? 'Deleting…' : 'Delete option'}
+            {pending ? 'Deleting…' : `Delete ${noun}`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -221,6 +221,12 @@ function ZonesPanel({ zones, barangayCounts }: { zones: Zone[]; barangayCounts: 
                   <p className="text-sm text-muted-foreground">{count === 1 ? '1 barangay' : `${count} barangays`}</p>
                 </div>
                 <ZoneDialog zone={zone} />
+                <DeleteDialog
+                  label={zone.name}
+                  noun="zone"
+                  description="Existing reports keep the zone name. A zone that still has barangays cannot be deleted; move them to another zone first."
+                  onDelete={() => deleteZone(zone.id)}
+                />
               </>
             );
           }}
@@ -254,7 +260,12 @@ function OptionsPanel({ kind, options, allOptions }: { kind: ConditionKind; opti
                 </div>
               </div>
               <OptionDialog kind={kind} option={option} />
-              <DeleteOptionDialog option={option} />
+              <DeleteDialog
+                label={option.label}
+                noun="option"
+                description="Encoders can no longer pick it. An option already used on a report cannot be deleted; set it to Inactive instead."
+                onDelete={() => deleteOption(option.id)}
+              />
             </>
           )}
         </SortableList>
